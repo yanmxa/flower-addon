@@ -27,16 +27,16 @@ undeploy-superlink: ## Remove SuperLink from hub cluster
 ##@ OCM Addon Deployment
 
 .PHONY: deploy-addon
-deploy-addon: ## Deploy OCM addon resources (AddOnTemplate, ClusterManagementAddOn, etc.)
-	@echo "Deploying OCM addon resources..."
-	$(KUBECTL) apply -k deploy/addon/
+deploy-addon: ## Deploy OCM addon template resources (AddOnTemplate, ClusterManagementAddOn in Manual mode)
+	@echo "Deploying OCM addon template resources..."
+	$(KUBECTL) apply -k deploy/addon-template/
 	@echo ""
-	@echo "Addon deployment complete!"
+	@echo "Addon template deployment complete!"
 	@echo "Next: Update SuperLink address with: make update-superlink-address"
 
 .PHONY: undeploy-addon
-undeploy-addon: ## Remove OCM addon resources
-	$(KUBECTL) delete -k deploy/addon/ --ignore-not-found
+undeploy-addon: ## Remove OCM addon template resources
+	$(KUBECTL) delete -k deploy/addon-template/ --ignore-not-found
 
 .PHONY: update-superlink-address
 update-superlink-address: ## Update SuperLink address with hub node IP
@@ -53,14 +53,47 @@ ifndef CLUSTER
 	$(error CLUSTER is not set. Usage: make enable-addon CLUSTER=cluster1)
 endif
 	@echo "Enabling flower-addon on cluster $(CLUSTER)..."
-	$(KUBECTL) apply -k examples/$(CLUSTER)/
+	$(KUBECTL) apply -k deploy/addon/install/$(CLUSTER)/
 
 .PHONY: disable-addon
 disable-addon: ## Disable addon on a cluster (usage: make disable-addon CLUSTER=cluster1)
 ifndef CLUSTER
 	$(error CLUSTER is not set. Usage: make disable-addon CLUSTER=cluster1)
 endif
-	$(KUBECTL) delete -k examples/$(CLUSTER)/ --ignore-not-found
+	$(KUBECTL) delete -k deploy/addon/install/$(CLUSTER)/ --ignore-not-found
+
+##@ Auto-Install (Placement-based)
+
+.PHONY: deploy-auto-gpu
+deploy-auto-gpu: ## Deploy auto-install for GPU clusters (clusters with gpu=true label)
+	@echo "Deploying auto-install configuration for GPU clusters..."
+	$(KUBECTL) apply -k deploy/addon/auto-install/gpu-clusters/
+	@echo ""
+	@echo "GPU auto-install deployed!"
+	@echo "Label clusters with: make label-gpu-cluster CLUSTER=<cluster-name>"
+
+.PHONY: deploy-auto-all
+deploy-auto-all: ## Deploy auto-install for all clusters (global cluster set)
+	@echo "Deploying auto-install configuration for all clusters..."
+	$(KUBECTL) apply -k deploy/addon/auto-install/all-clusters/
+	@echo ""
+	@echo "All-clusters auto-install deployed!"
+
+.PHONY: undeploy-auto-gpu
+undeploy-auto-gpu: ## Remove GPU auto-install configuration
+	$(KUBECTL) delete -k deploy/addon/auto-install/gpu-clusters/ --ignore-not-found
+
+.PHONY: undeploy-auto-all
+undeploy-auto-all: ## Remove all-clusters auto-install configuration
+	$(KUBECTL) delete -k deploy/addon/auto-install/all-clusters/ --ignore-not-found
+
+.PHONY: label-gpu-cluster
+label-gpu-cluster: ## Label a cluster for GPU auto-install (usage: make label-gpu-cluster CLUSTER=cluster1)
+ifndef CLUSTER
+	$(error CLUSTER is not set. Usage: make label-gpu-cluster CLUSTER=cluster1)
+endif
+	$(KUBECTL) label managedcluster $(CLUSTER) gpu=true --overwrite
+	@echo "Cluster $(CLUSTER) labeled with gpu=true"
 
 .PHONY: deploy-cluster-config
 deploy-cluster-config: ## Deploy per-cluster config (usage: make deploy-cluster-config CLUSTER=cluster1 PARTITION_ID=0 NUM_PARTITIONS=2)
@@ -132,6 +165,12 @@ status: ## Show addon status
 	@echo ""
 	@echo "=== AddOnDeploymentConfigs ==="
 	$(KUBECTL) get addondeploymentconfigs -A
+	@echo ""
+	@echo "=== Placements ==="
+	$(KUBECTL) get placements -n $(NAMESPACE)
+	@echo ""
+	@echo "=== PlacementDecisions ==="
+	$(KUBECTL) get placementdecisions -n $(NAMESPACE)
 	@echo ""
 	@echo "=== ManagedClusterAddOns ==="
 	$(KUBECTL) get managedclusteraddons -A
