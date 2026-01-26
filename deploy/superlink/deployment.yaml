@@ -33,7 +33,6 @@ spec:
         image: flwr/superlink:1.25.0
         imagePullPolicy: IfNotPresent
         args:
-        - "flower-superlink"
         - "--insecure"
         - "--isolation=subprocess"
         ports:

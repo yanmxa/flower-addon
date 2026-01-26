@@ -57,10 +57,10 @@ spec:
                     image: "{{IMAGE}}"
                     imagePullPolicy: IfNotPresent
                     args:
-                      - "flower-supernode"
                       - "--insecure"
                       - "--superlink={{SUPERLINK_ADDRESS}}:{{SUPERLINK_PORT}}"
-                      - "--node-config=partition-id={{PARTITION_ID}} num-partitions={{NUM_PARTITIONS}}"
+                      - "--node-config"
+                      - "partition-id={{PARTITION_ID}} num-partitions={{NUM_PARTITIONS}}"
                       - "--isolation=subprocess"
                       - "--clientappio-api-address=0.0.0.0:9094"
                     ports:
