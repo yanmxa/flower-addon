@@ -1,107 +1,51 @@
-# Image configuration
-IMAGE_REGISTRY ?= quay.io
-IMAGE_REPO ?= $(IMAGE_REGISTRY)/yanmxa
-IMAGE_NAME ?= flower-addon-manager
-IMAGE_TAG ?= latest
-IMAGE ?= $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG)
-
-# Go configuration
-GOOS ?= $(shell go env GOOS)
-GOARCH ?= $(shell go env GOARCH)
-
 # Kubernetes configuration
 KUBECTL ?= kubectl
 NAMESPACE ?= open-cluster-management
 
+# Image configuration (official Flower images)
+FLOWER_VERSION ?= 1.25.0
+SUPERNODE_IMAGE ?= flwr/supernode:$(FLOWER_VERSION)
+
 .PHONY: all
-all: build
+all: help
 
-##@ Development
+##@ SuperLink Deployment
 
-.PHONY: fmt
-fmt: ## Run go fmt against code
-	go fmt ./...
+.PHONY: deploy-superlink
+deploy-superlink: ## Deploy SuperLink on hub cluster
+	@echo "Deploying SuperLink..."
+	$(KUBECTL) apply -k deploy/superlink/
+	@echo ""
+	@echo "SuperLink deployment complete!"
+	@echo "Waiting for SuperLink to be ready..."
+	$(KUBECTL) wait --for=condition=available --timeout=120s deployment/superlink -n flower-system || true
 
-.PHONY: vet
-vet: ## Run go vet against code
-	go vet ./...
+.PHONY: undeploy-superlink
+undeploy-superlink: ## Remove SuperLink from hub cluster
+	$(KUBECTL) delete -k deploy/superlink/ --ignore-not-found
 
-.PHONY: lint
-lint: ## Run golangci-lint
-	golangci-lint run ./...
+##@ OCM Addon Deployment
 
-.PHONY: test
-test: ## Run tests
-	go test ./... -coverprofile cover.out
+.PHONY: deploy-addon
+deploy-addon: ## Deploy OCM addon resources (AddOnTemplate, ClusterManagementAddOn, etc.)
+	@echo "Deploying OCM addon resources..."
+	$(KUBECTL) apply -k deploy/addon/
+	@echo ""
+	@echo "Addon deployment complete!"
+	@echo "Next: Update SuperLink address with: make update-superlink-address"
 
-##@ Build
+.PHONY: undeploy-addon
+undeploy-addon: ## Remove OCM addon resources
+	$(KUBECTL) delete -k deploy/addon/ --ignore-not-found
 
-.PHONY: build
-build: fmt vet ## Build the binary
-	go build -o bin/flower-addon-manager ./cmd/manager
+.PHONY: update-superlink-address
+update-superlink-address: ## Update SuperLink address with hub node IP
+	@HUB_IP=$$($(KUBECTL) get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}'); \
+	echo "Hub Node IP: $$HUB_IP"; \
+	$(KUBECTL) patch addondeploymentconfig flower-addon-config -n $(NAMESPACE) \
+		--type=json -p='[{"op":"replace","path":"/spec/customizedVariables/0/value","value":"'"$$HUB_IP"'"}]'
 
-.PHONY: run
-run: fmt vet ## Run the addon manager locally
-	go run ./cmd/manager
-
-.PHONY: docker-build
-docker-build: ## Build Docker image
-	docker build -t $(IMAGE) .
-
-.PHONY: docker-push
-docker-push: ## Push Docker image
-	docker push $(IMAGE)
-
-.PHONY: docker-build-push
-docker-build-push: docker-build docker-push ## Build and push Docker image
-
-##@ Certificate Management
-
-.PHONY: generate-certs
-generate-certs: ## Generate TLS certificates
-	./scripts/generate-certs.sh ./certificates
-
-.PHONY: create-cert-secrets
-create-cert-secrets: ## Create certificate secrets in Kubernetes
-	@echo "Creating namespace flower-system if not exists..."
-	-$(KUBECTL) create namespace flower-system
-	@echo "Creating CA signing secret..."
-	$(KUBECTL) create secret tls flower-ca-signing-secret \
-		--cert=./certificates/ca.crt \
-		--key=./certificates/ca.key \
-		-n $(NAMESPACE) --dry-run=client -o yaml | $(KUBECTL) apply -f -
-	@echo "Creating SuperLink TLS secret..."
-	$(KUBECTL) create secret generic superlink-tls \
-		--from-file=ca.crt=./certificates/ca.crt \
-		--from-file=tls.crt=./certificates/server.crt \
-		--from-file=tls.key=./certificates/server.key \
-		-n flower-system --dry-run=client -o yaml | $(KUBECTL) apply -f -
-
-##@ Deployment
-
-.PHONY: deploy-hub
-deploy-hub: ## Deploy hub components (SuperLink, ClusterManagementAddOn)
-	$(KUBECTL) apply -f manifests/hub/namespace.yaml
-	$(KUBECTL) apply -f manifests/hub/clustermanagementaddon.yaml
-	$(KUBECTL) apply -f manifests/hub/addon-deployment-config.yaml
-	$(KUBECTL) apply -f manifests/hub/superlink-deployment.yaml
-	$(KUBECTL) apply -f manifests/hub/superlink-service.yaml
-
-.PHONY: undeploy-hub
-undeploy-hub: ## Remove hub components
-	-$(KUBECTL) delete -f manifests/hub/superlink-service.yaml
-	-$(KUBECTL) delete -f manifests/hub/superlink-deployment.yaml
-	-$(KUBECTL) delete -f manifests/hub/addon-deployment-config.yaml
-	-$(KUBECTL) delete -f manifests/hub/clustermanagementaddon.yaml
-	-$(KUBECTL) delete -f manifests/hub/namespace.yaml
-
-.PHONY: deploy-manager
-deploy-manager: ## Deploy the addon manager
-	$(KUBECTL) apply -f manifests/manager/
-
-.PHONY: undeploy-manager
-undeploy-manager: ## Remove the addon manager
-	-$(KUBECTL) delete -f manifests/manager/
+##@ Cluster Configuration
 
 .PHONY: enable-addon
 enable-addon: ## Enable addon on a cluster (usage: make enable-addon CLUSTER=cluster1)
@@ -109,17 +53,91 @@ ifndef CLUSTER
 	$(error CLUSTER is not set. Usage: make enable-addon CLUSTER=cluster1)
 endif
 	@echo "Enabling flower-addon on cluster $(CLUSTER)..."
-	@echo 'apiVersion: addon.open-cluster-management.io/v1alpha1\nkind: ManagedClusterAddOn\nmetadata:\n  name: flower-addon\n  namespace: $(CLUSTER)\nspec:\n  installNamespace: flower-addon' | $(KUBECTL) apply -f -
+	$(KUBECTL) apply -k examples/$(CLUSTER)/
 
 .PHONY: disable-addon
 disable-addon: ## Disable addon on a cluster (usage: make disable-addon CLUSTER=cluster1)
 ifndef CLUSTER
 	$(error CLUSTER is not set. Usage: make disable-addon CLUSTER=cluster1)
 endif
-	$(KUBECTL) delete managedclusteraddon flower-addon -n $(CLUSTER) --ignore-not-found
+	$(KUBECTL) delete -k examples/$(CLUSTER)/ --ignore-not-found
+
+.PHONY: deploy-cluster-config
+deploy-cluster-config: ## Deploy per-cluster config (usage: make deploy-cluster-config CLUSTER=cluster1 PARTITION_ID=0 NUM_PARTITIONS=2)
+ifndef CLUSTER
+	$(error CLUSTER is not set. Usage: make deploy-cluster-config CLUSTER=cluster1 PARTITION_ID=0 NUM_PARTITIONS=2)
+endif
+ifndef PARTITION_ID
+	$(error PARTITION_ID is not set. Usage: make deploy-cluster-config CLUSTER=cluster1 PARTITION_ID=0 NUM_PARTITIONS=2)
+endif
+ifndef NUM_PARTITIONS
+	$(error NUM_PARTITIONS is not set. Usage: make deploy-cluster-config CLUSTER=cluster1 PARTITION_ID=0 NUM_PARTITIONS=2)
+endif
+	@HUB_IP=$$($(KUBECTL) get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}'); \
+	echo "Creating AddOnDeploymentConfig for $(CLUSTER) with partition $(PARTITION_ID)/$(NUM_PARTITIONS)..."; \
+	echo "apiVersion: addon.open-cluster-management.io/v1alpha1" | \
+	{ cat; echo "kind: AddOnDeploymentConfig"; } | \
+	{ cat; echo "metadata:"; } | \
+	{ cat; echo "  name: flower-addon-config"; } | \
+	{ cat; echo "  namespace: $(CLUSTER)"; } | \
+	{ cat; echo "spec:"; } | \
+	{ cat; echo "  customizedVariables:"; } | \
+	{ cat; echo "    - name: SUPERLINK_ADDRESS"; } | \
+	{ cat; echo "      value: \"$$HUB_IP\""; } | \
+	{ cat; echo "    - name: SUPERLINK_PORT"; } | \
+	{ cat; echo "      value: \"30092\""; } | \
+	{ cat; echo "    - name: IMAGE"; } | \
+	{ cat; echo "      value: \"$(SUPERNODE_IMAGE)\""; } | \
+	{ cat; echo "    - name: PARTITION_ID"; } | \
+	{ cat; echo "      value: \"$(PARTITION_ID)\""; } | \
+	{ cat; echo "    - name: NUM_PARTITIONS"; } | \
+	{ cat; echo "      value: \"$(NUM_PARTITIONS)\""; } | \
+	$(KUBECTL) apply -f -
+
+##@ Quick Setup
+
+.PHONY: deploy-all
+deploy-all: deploy-superlink deploy-addon update-superlink-address ## Deploy SuperLink and addon (one-step setup)
+	@echo ""
+	@echo "All hub components deployed!"
+	@echo "Enable addon on clusters with: make enable-addon CLUSTER=<cluster-name>"
+
+.PHONY: undeploy-all
+undeploy-all: undeploy-addon undeploy-superlink ## Remove all hub components
+	@echo "All hub components removed."
+
+.PHONY: setup-clusters
+setup-clusters: deploy-all ## Deploy hub and configure example clusters (cluster1, cluster2)
+	@echo "Setting up cluster1 (partition 0)..."
+	$(MAKE) deploy-cluster-config CLUSTER=cluster1 PARTITION_ID=0 NUM_PARTITIONS=2
+	$(MAKE) enable-addon CLUSTER=cluster1
+	@echo "Setting up cluster2 (partition 1)..."
+	$(MAKE) deploy-cluster-config CLUSTER=cluster2 PARTITION_ID=1 NUM_PARTITIONS=2
+	$(MAKE) enable-addon CLUSTER=cluster2
+	@echo ""
+	@echo "Setup complete! Check addon status with: make status"
+
+##@ Status
+
+.PHONY: status
+status: ## Show addon status
+	@echo "=== SuperLink Status ==="
+	$(KUBECTL) get pods -n flower-system
+	@echo ""
+	@echo "=== AddOnTemplate ==="
+	$(KUBECTL) get addontemplates
+	@echo ""
+	@echo "=== ClusterManagementAddOn ==="
+	$(KUBECTL) get clustermanagementaddons
+	@echo ""
+	@echo "=== AddOnDeploymentConfigs ==="
+	$(KUBECTL) get addondeploymentconfigs -A
+	@echo ""
+	@echo "=== ManagedClusterAddOns ==="
+	$(KUBECTL) get managedclusteraddons -A
 
 ##@ Help
 
 .PHONY: help
 help: ## Display this help
-	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-25s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)

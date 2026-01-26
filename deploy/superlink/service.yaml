@@ -28,7 +28,6 @@ spec:
     nodePort: 30093
     protocol: TCP
 ---
-# ClusterIP service for internal access
 apiVersion: v1
 kind: Service
 metadata:

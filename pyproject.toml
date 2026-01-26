@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "flowerexample"
+name = "cifar10"
 version = "1.0.0"
-description = "Federated Learning with Flower"
+description = "CIFAR-10 Image Classification with Federated Learning (FedAvg + CNN)"
 license = "Apache-2.0"
 dependencies = [
     "flwr>=1.25.0",
@@ -15,14 +15,14 @@ dependencies = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["."]
+packages = ["cifar10"]
 
 [tool.flwr.app]
 publisher = "local"
 
 [tool.flwr.app.components]
-serverapp = "flowerexample.server_app:app"
-clientapp = "flowerexample.client_app:app"
+serverapp = "cifar10.server_app:app"
+clientapp = "cifar10.client_app:app"
 
 [tool.flwr.app.config]
 num-server-rounds = 3

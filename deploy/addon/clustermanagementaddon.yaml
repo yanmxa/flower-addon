@@ -2,8 +2,6 @@ apiVersion: addon.open-cluster-management.io/v1alpha1
 kind: ClusterManagementAddOn
 metadata:
   name: flower-addon
-  annotations:
-    addon.open-cluster-management.io/lifecycle: addon-manager
 spec:
   addOnMeta:
     displayName: Flower Federated Learning
@@ -12,6 +10,12 @@ spec:
       managed clusters using the Flower framework. It deploys SuperNode agents on
       managed clusters that connect to a central SuperLink server on the hub.
   supportedConfigs:
+    # Reference to AddOnTemplate (cluster-scoped, no namespace needed)
+    - group: addon.open-cluster-management.io
+      resource: addontemplates
+      defaultConfig:
+        name: flower-addon
+    # Reference to AddOnDeploymentConfig for custom variables
     - group: addon.open-cluster-management.io
       resource: addondeploymentconfigs
   installStrategy:

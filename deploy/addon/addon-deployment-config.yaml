@@ -1,0 +1,20 @@
+apiVersion: addon.open-cluster-management.io/v1alpha1
+kind: AddOnDeploymentConfig
+metadata:
+  name: flower-addon-config
+  namespace: open-cluster-management
+spec:
+  customizedVariables:
+    # SuperLink connection settings (replace HUB_NODE_IP during deployment)
+    - name: SUPERLINK_ADDRESS
+      value: "<HUB_NODE_IP>"
+    - name: SUPERLINK_PORT
+      value: "30092"
+    # SuperNode image (official Flower image)
+    - name: IMAGE
+      value: "flwr/supernode:1.25.0"
+    # Partition settings (will be overridden per-cluster if needed)
+    - name: PARTITION_ID
+      value: "0"
+    - name: NUM_PARTITIONS
+      value: "2"

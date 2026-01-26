@@ -1,3 +1,12 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: superlink
+  namespace: flower-system
+  labels:
+    app.kubernetes.io/name: flower
+    app.kubernetes.io/component: superlink
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -21,13 +30,11 @@ spec:
       serviceAccountName: superlink
       containers:
       - name: superlink
-        image: flwr/superlink:1.15.0
+        image: flwr/superlink:1.25.0
         imagePullPolicy: IfNotPresent
         args:
         - "flower-superlink"
-        - "--ssl-ca-certfile=/certs/ca.crt"
-        - "--ssl-certfile=/certs/tls.crt"
-        - "--ssl-keyfile=/certs/tls.key"
+        - "--insecure"
         - "--isolation=subprocess"
         ports:
         - name: exec
@@ -39,10 +46,6 @@ spec:
         - name: control
           containerPort: 9093
           protocol: TCP
-        volumeMounts:
-        - name: superlink-certs
-          mountPath: /certs
-          readOnly: true
         resources:
           requests:
             cpu: 200m
@@ -60,17 +63,3 @@ spec:
             port: 9092
           initialDelaySeconds: 5
           periodSeconds: 5
-      volumes:
-      - name: superlink-certs
-        secret:
-          secretName: superlink-tls
-          optional: false
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: superlink
-  namespace: flower-system
-  labels:
-    app.kubernetes.io/name: flower
-    app.kubernetes.io/component: superlink

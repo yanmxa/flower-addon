@@ -1,0 +1,13 @@
+# ManagedClusterAddOn to enable flower-addon on cluster2
+apiVersion: addon.open-cluster-management.io/v1alpha1
+kind: ManagedClusterAddOn
+metadata:
+  name: flower-addon
+  namespace: cluster2
+spec:
+  installNamespace: flower-addon
+  configs:
+    - group: addon.open-cluster-management.io
+      resource: addondeploymentconfigs
+      name: flower-addon-config
+      namespace: cluster2
