@@ -20,10 +20,8 @@ spec:
         - name: superlink
           image: flwr/superlink:1.25.0
           args:
+            - --insecure
             - --isolation=process
-            - --ssl-ca-certfile=/app/certificates/ca.crt
-            - --ssl-certfile=/app/certificates/server.pem
-            - --ssl-keyfile=/app/certificates/server.key
           ports:
             - name: appio
               containerPort: 9091
@@ -35,9 +33,6 @@ spec:
               containerPort: 9093
               protocol: TCP
           volumeMounts:
-            - name: tls-certs
-              mountPath: /app/certificates
-              readOnly: true
             - name: state
               mountPath: /app/state
           resources:
@@ -58,9 +53,6 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
       volumes:
-        - name: tls-certs
-          secret:
-            secretName: flower-tls
         - name: state
           persistentVolumeClaim:
             claimName: superlink-state

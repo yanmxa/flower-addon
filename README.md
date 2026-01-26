@@ -1,9 +1,11 @@
 # Flower Federated Learning Deployment
 
-A complete Flower federated learning setup with TLS encryption, supporting three deployment modes:
+A complete Flower federated learning setup supporting three deployment modes:
 - **Local**: Direct process deployment for development/testing
 - **Docker**: Containerized deployment with Docker Compose
-- **Kubernetes**: Production-ready K8s deployment
+- **Kubernetes**: K8s deployment with Minikube/Kind
+
+> **Note**: This is a minimal implementation using insecure mode for simplicity. For production, enable TLS.
 
 ## Architecture
 
@@ -44,9 +46,6 @@ uv venv .venv --seed
 
 # Install dependencies
 .venv/bin/pip install -e .
-
-# Generate TLS certificates
-.venv/bin/python generate_certs.py
 ```
 
 ### 2. Local Deployment (Phase 1)
@@ -111,17 +110,11 @@ kubectl port-forward svc/superlink 9093:9093 -n flower
 ```
 flower-addon/
 ├── pyproject.toml              # Project configuration
-├── generate_certs.py           # TLS certificate generation
 ├── flowerexample/              # Python package
 │   ├── __init__.py
 │   ├── client_app.py           # ClientApp implementation
 │   ├── server_app.py           # ServerApp implementation
 │   └── task.py                 # Model, training, data loading
-├── certificates/               # Generated TLS certificates
-│   ├── ca.crt                  # CA certificate
-│   ├── ca.key                  # CA private key
-│   ├── server.pem              # Server certificate
-│   └── server.key              # Server private key
 ├── scripts/
 │   ├── start_superlink.sh      # Local SuperLink startup
 │   ├── start_supernode_1.sh    # Local SuperNode 1 startup
@@ -134,15 +127,8 @@ flower-addon/
     ├── namespace.yaml
     ├── kustomization.yaml
     ├── superlink/
-    │   ├── deployment.yaml
-    │   └── service.yaml
     ├── supernode/
-    │   ├── deployment-1.yaml
-    │   ├── deployment-2.yaml
-    │   └── service.yaml
     └── superexec/
-        ├── serverapp-deployment.yaml
-        └── clientapp-deployments.yaml
 ```
 
 ## Configuration
@@ -176,33 +162,12 @@ Simple CNN for CIFAR-10 image classification:
 - 2 fully connected layers (1024 → 64 → 10)
 - FedAvg aggregation strategy
 
-## TLS Certificates
-
-Certificates are generated with the following SANs:
-- `localhost`
-- `superlink` (Docker/K8s service name)
-- `superlink.flower.svc.cluster.local` (K8s FQDN)
-- `127.0.0.1`
-- `::1`
-
-Valid for 365 days. Regenerate when expired:
-```bash
-rm -rf certificates/*
-.venv/bin/python generate_certs.py
-```
-
 ## Troubleshooting
 
 ### Connection refused
 - Ensure SuperLink is running and healthy
-- Check TLS certificates are valid and accessible
 - Verify port mappings in Docker/K8s
-
-### Certificate errors
-- Regenerate certificates: `python generate_certs.py`
-- Ensure CA cert path matches in client configuration
 
 ### K8s pods not starting
 - Check logs: `kubectl logs -n flower <pod-name>`
-- Verify TLS secret exists: `kubectl get secret -n flower`
 - Check image availability: `kubectl describe pod -n flower <pod-name>`

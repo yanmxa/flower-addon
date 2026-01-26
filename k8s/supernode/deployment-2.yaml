@@ -22,19 +22,15 @@ spec:
         - name: supernode
           image: flwr/supernode:1.25.0
           args:
+            - --insecure
             - --superlink=superlink.flower.svc.cluster.local:9092
             - --clientappio-api-address=0.0.0.0:9095
             - --isolation=process
             - --node-config=partition-id=1 num-partitions=2
-            - --root-certificates=/app/certificates/ca.crt
           ports:
             - name: clientappio
               containerPort: 9095
               protocol: TCP
-          volumeMounts:
-            - name: tls-certs
-              mountPath: /app/certificates
-              readOnly: true
           resources:
             requests:
               memory: "512Mi"
@@ -52,7 +48,3 @@ spec:
               port: clientappio
             initialDelaySeconds: 10
             periodSeconds: 5
-      volumes:
-        - name: tls-certs
-          secret:
-            secretName: flower-tls

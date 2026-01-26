@@ -5,14 +5,13 @@ build-backend = "hatchling.build"
 [project]
 name = "flowerexample"
 version = "1.0.0"
-description = "Federated Learning with Flower - TLS Enabled"
+description = "Federated Learning with Flower"
 license = "Apache-2.0"
 dependencies = [
     "flwr>=1.25.0",
     "flwr-datasets[vision]>=0.5.0",
     "torch==2.8.0",
     "torchvision==0.23.0",
-    "cryptography>=42.0.0",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -37,12 +36,12 @@ default = "local-deployment"
 
 [tool.flwr.federations.local-deployment]
 address = "127.0.0.1:9093"
-root-certificates = "./certificates/ca.crt"
+insecure = true
 
 [tool.flwr.federations.remote-deployment]
 address = "cloud-vm:9093"
-root-certificates = "./certificates/ca.crt"
+insecure = true
 
 [tool.flwr.federations.k8s-deployment]
 address = "127.0.0.1:9093"
-root-certificates = "./certificates/ca.crt"
+insecure = true

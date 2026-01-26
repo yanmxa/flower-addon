@@ -1,10 +1,9 @@
 #!/bin/bash
-# Deploy Flower Federated Learning to Kubernetes
+# Deploy Flower Federated Learning to Kubernetes (insecure mode)
 #
 # Prerequisites:
 # - kubectl configured with target cluster
 # - Docker for building custom image
-# - TLS certificates generated in certificates/
 #
 # Usage:
 #   ./scripts/deploy-k8s.sh [build|deploy|teardown]
@@ -47,32 +46,11 @@ build_image() {
     log_info "Image built successfully!"
 }
 
-create_tls_secret() {
-    log_info "Creating TLS secret..."
-
-    if [ ! -f "$PROJECT_DIR/certificates/ca.crt" ]; then
-        log_error "TLS certificates not found. Run: python generate_certs.py"
-        exit 1
-    fi
+deploy() {
+    log_info "Deploying Flower to Kubernetes (insecure mode)..."
 
     # Create namespace if it doesn't exist
     kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
-
-    # Create or update the secret
-    kubectl create secret generic flower-tls \
-        --from-file=ca.crt="$PROJECT_DIR/certificates/ca.crt" \
-        --from-file=server.pem="$PROJECT_DIR/certificates/server.pem" \
-        --from-file=server.key="$PROJECT_DIR/certificates/server.key" \
-        -n "$NAMESPACE" \
-        --dry-run=client -o yaml | kubectl apply -f -
-
-    log_info "TLS secret created!"
-}
-
-deploy() {
-    log_info "Deploying Flower to Kubernetes..."
-
-    create_tls_secret
 
     cd "$PROJECT_DIR"
     kubectl apply -k k8s/
@@ -96,7 +74,6 @@ teardown() {
 
     cd "$PROJECT_DIR"
     kubectl delete -k k8s/ --ignore-not-found
-    kubectl delete secret flower-tls -n "$NAMESPACE" --ignore-not-found
     kubectl delete pvc superlink-state -n "$NAMESPACE" --ignore-not-found
 
     log_info "Teardown complete!"
