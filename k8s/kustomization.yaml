@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: flower
+
+resources:
+  - namespace.yaml
+  - superlink/deployment.yaml
+  - superlink/service.yaml
+  - supernode/deployment-1.yaml
+  - supernode/deployment-2.yaml
+  - supernode/service.yaml
+  - superexec/serverapp-deployment.yaml
+  - superexec/clientapp-deployments.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: flower-federated-learning
+
+images:
+  - name: flowerexample-superexec
+    newName: flowerexample-superexec
+    newTag: latest

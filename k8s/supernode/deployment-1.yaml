@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: supernode-1
+  namespace: flower
+  labels:
+    app.kubernetes.io/name: supernode
+    app.kubernetes.io/instance: supernode-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: supernode
+      app.kubernetes.io/instance: supernode-1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: supernode
+        app.kubernetes.io/instance: supernode-1
+    spec:
+      containers:
+        - name: supernode
+          image: flwr/supernode:1.25.0
+          args:
+            - --superlink=superlink.flower.svc.cluster.local:9092
+            - --clientappio-api-address=0.0.0.0:9094
+            - --isolation=process
+            - --node-config=partition-id=0 num-partitions=2
+            - --root-certificates=/app/certificates/ca.crt
+          ports:
+            - name: clientappio
+              containerPort: 9094
+              protocol: TCP
+          volumeMounts:
+            - name: tls-certs
+              mountPath: /app/certificates
+              readOnly: true
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+          livenessProbe:
+            tcpSocket:
+              port: clientappio
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: clientappio
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: tls-certs
+          secret:
+            secretName: flower-tls

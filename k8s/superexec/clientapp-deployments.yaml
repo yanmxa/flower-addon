@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: superexec-clientapp-1
+  namespace: flower
+  labels:
+    app.kubernetes.io/name: superexec
+    app.kubernetes.io/component: clientapp
+    app.kubernetes.io/instance: clientapp-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: superexec
+      app.kubernetes.io/instance: clientapp-1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: superexec
+        app.kubernetes.io/component: clientapp
+        app.kubernetes.io/instance: clientapp-1
+    spec:
+      containers:
+        - name: superexec
+          image: flowerexample-superexec:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - --insecure
+            - --appio-api-address=supernode-1.flower.svc.cluster.local:9094
+            - --plugin-type=clientapp
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+      restartPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: superexec-clientapp-2
+  namespace: flower
+  labels:
+    app.kubernetes.io/name: superexec
+    app.kubernetes.io/component: clientapp
+    app.kubernetes.io/instance: clientapp-2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: superexec
+      app.kubernetes.io/instance: clientapp-2
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: superexec
+        app.kubernetes.io/component: clientapp
+        app.kubernetes.io/instance: clientapp-2
+    spec:
+      containers:
+        - name: superexec
+          image: flowerexample-superexec:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - --insecure
+            - --appio-api-address=supernode-2.flower.svc.cluster.local:9095
+            - --plugin-type=clientapp
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+      restartPolicy: Always

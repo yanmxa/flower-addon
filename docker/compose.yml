@@ -1,0 +1,135 @@
+# Flower Federated Learning - Docker Compose Configuration
+#
+# Architecture:
+# - SuperLink: Central coordinator (ports 9091, 9092, 9093)
+# - SuperNode 1 & 2: Distributed nodes (ports 9094, 9095)
+# - SuperExec ServerApp: Runs the server application
+# - SuperExec ClientApp 1 & 2: Runs client applications
+#
+# Usage:
+#   docker compose -f docker/compose.yml up --build -d
+#   flwr run . remote-deployment --stream
+
+services:
+  superlink:
+    image: flwr/superlink:1.25.0
+    container_name: flower-superlink
+    command:
+      - --isolation=process
+      - --ssl-ca-certfile=/app/certificates/ca.crt
+      - --ssl-certfile=/app/certificates/server.pem
+      - --ssl-keyfile=/app/certificates/server.key
+    volumes:
+      - ../certificates:/app/certificates:ro
+      - flower-state:/app/state:rw
+    ports:
+      - "9091:9091"  # App IO API (SuperExec <-> SuperLink)
+      - "9092:9092"  # Fleet API (SuperNode <-> SuperLink)
+      - "9093:9093"  # Control API (CLI <-> SuperLink)
+    networks:
+      - flower-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  superexec-serverapp:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.superexec
+    container_name: flower-serverapp
+    command:
+      - --insecure
+      - --appio-api-address=superlink:9091
+      - --plugin-type=serverapp
+    depends_on:
+      superlink:
+        condition: service_healthy
+    networks:
+      - flower-network
+    restart: on-failure
+
+  supernode-1:
+    image: flwr/supernode:1.25.0
+    container_name: flower-supernode-1
+    command:
+      - --superlink=superlink:9092
+      - --clientappio-api-address=0.0.0.0:9094
+      - --isolation=process
+      - --node-config=partition-id=0 num-partitions=2
+      - --root-certificates=/app/certificates/ca.crt
+    volumes:
+      - ../certificates:/app/certificates:ro
+    depends_on:
+      superlink:
+        condition: service_healthy
+    networks:
+      - flower-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9094"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  supernode-2:
+    image: flwr/supernode:1.25.0
+    container_name: flower-supernode-2
+    command:
+      - --superlink=superlink:9092
+      - --clientappio-api-address=0.0.0.0:9095
+      - --isolation=process
+      - --node-config=partition-id=1 num-partitions=2
+      - --root-certificates=/app/certificates/ca.crt
+    volumes:
+      - ../certificates:/app/certificates:ro
+    depends_on:
+      superlink:
+        condition: service_healthy
+    networks:
+      - flower-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9095"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  superexec-clientapp-1:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.superexec
+    container_name: flower-clientapp-1
+    command:
+      - --insecure
+      - --appio-api-address=supernode-1:9094
+      - --plugin-type=clientapp
+    depends_on:
+      supernode-1:
+        condition: service_healthy
+    networks:
+      - flower-network
+    restart: on-failure
+
+  superexec-clientapp-2:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.superexec
+    container_name: flower-clientapp-2
+    command:
+      - --insecure
+      - --appio-api-address=supernode-2:9095
+      - --plugin-type=clientapp
+    depends_on:
+      supernode-2:
+        condition: service_healthy
+    networks:
+      - flower-network
+    restart: on-failure
+
+volumes:
+  flower-state:
+    driver: local
+
+networks:
+  flower-network:
+    driver: bridge
