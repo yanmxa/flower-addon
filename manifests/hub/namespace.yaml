@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: flower
+  name: flower-system
   labels:
     app.kubernetes.io/name: flower
-    app.kubernetes.io/component: federated-learning
+    app.kubernetes.io/component: hub

@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: superlink
+  namespace: flower-system
+  labels:
+    app.kubernetes.io/name: flower
+    app.kubernetes.io/component: superlink
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: flower
+    app.kubernetes.io/component: superlink
+  ports:
+  - name: exec
+    port: 9091
+    targetPort: 9091
+    nodePort: 30091
+    protocol: TCP
+  - name: fleet
+    port: 9092
+    targetPort: 9092
+    nodePort: 30092
+    protocol: TCP
+  - name: control
+    port: 9093
+    targetPort: 9093
+    nodePort: 30093
+    protocol: TCP
+---
+# ClusterIP service for internal access
+apiVersion: v1
+kind: Service
+metadata:
+  name: superlink-internal
+  namespace: flower-system
+  labels:
+    app.kubernetes.io/name: flower
+    app.kubernetes.io/component: superlink
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: flower
+    app.kubernetes.io/component: superlink
+  ports:
+  - name: exec
+    port: 9091
+    targetPort: 9091
+    protocol: TCP
+  - name: fleet
+    port: 9092
+    targetPort: 9092
+    protocol: TCP
+  - name: control
+    port: 9093
+    targetPort: 9093
+    protocol: TCP

@@ -1,11 +1,8 @@
-# Flower Federated Learning Deployment
+# Flower Federated Learning Example
 
-A complete Flower federated learning setup supporting three deployment modes:
-- **Local**: Direct process deployment for development/testing
-- **Docker**: Containerized deployment with Docker Compose
-- **Kubernetes**: K8s deployment with Minikube/Kind
+A minimal Flower federated learning example with local deployment.
 
-> **Note**: This is a minimal implementation using insecure mode for simplicity. For production, enable TLS.
+> **Note**: This uses insecure mode for simplicity. For production, enable TLS.
 
 ## Architecture
 
@@ -33,8 +30,6 @@ A complete Flower federated learning setup supporting three deployment modes:
 
 - Python 3.11+
 - [uv](https://github.com/astral-sh/uv) (recommended) or pip
-- Docker (for container deployment)
-- kubectl + Minikube/Kind (for K8s deployment)
 
 ## Quick Start
 
@@ -48,9 +43,9 @@ uv venv .venv --seed
 .venv/bin/pip install -e .
 ```
 
-### 2. Local Deployment (Phase 1)
+### 2. Run Federated Learning
 
-Run in 3 separate terminals:
+Open 4 terminals:
 
 ```bash
 # Terminal 1: Start SuperLink
@@ -61,48 +56,10 @@ Run in 3 separate terminals:
 
 # Terminal 3: Start SuperNode 2
 ./scripts/start_supernode_2.sh
-```
 
-Then run federated learning:
-
-```bash
-# https://flower.ai/docs/framework/how-to-run-flower-with-deployment-engine.html
-.venv/bin/flwr run . local-deployment --stream
-```
-
-### 3. Docker Deployment (Phase 2)
-
-```bash
-# Start all containers
-docker compose -f docker/compose.yml up --build -d
-
-# Check logs
-docker compose -f docker/compose.yml logs -f
-
-# Run federated learning (from host with remote-deployment config)
-.venv/bin/flwr run . remote-deployment --stream
-
-# Teardown
-docker compose -f docker/compose.yml down -v
-```
-
-### 4. Kubernetes Deployment (Phase 3)
-
-```bash
-# Deploy to Kubernetes (builds image + deploys)
-./scripts/deploy-k8s.sh deploy
-
-# Check status
-./scripts/deploy-k8s.sh status
-
-# Port-forward to access Control API
-kubectl port-forward svc/superlink 9093:9093 -n flower
-
-# Run federated learning
-.venv/bin/flwr run . k8s-deployment --stream
-
-# Teardown
-./scripts/deploy-k8s.sh teardown
+# Terminal 4: Run federated learning
+source .venv/bin/activate
+flwr run . local-deployment --stream
 ```
 
 ## Project Structure
@@ -115,35 +72,15 @@ flower-addon/
 │   ├── client_app.py           # ClientApp implementation
 │   ├── server_app.py           # ServerApp implementation
 │   └── task.py                 # Model, training, data loading
-├── scripts/
-│   ├── start_superlink.sh      # Local SuperLink startup
-│   ├── start_supernode_1.sh    # Local SuperNode 1 startup
-│   ├── start_supernode_2.sh    # Local SuperNode 2 startup
-│   └── deploy-k8s.sh           # Kubernetes deployment script
-├── docker/
-│   ├── compose.yml             # Docker Compose configuration
-│   └── Dockerfile.superexec    # Custom SuperExec image
-└── k8s/
-    ├── namespace.yaml
-    ├── kustomization.yaml
-    ├── superlink/
-    ├── supernode/
-    └── superexec/
+└── scripts/
+    ├── start_superlink.sh      # Start SuperLink
+    ├── start_supernode_1.sh    # Start SuperNode 1
+    └── start_supernode_2.sh    # Start SuperNode 2
 ```
 
 ## Configuration
 
-### Federation Targets
-
-Defined in `pyproject.toml`:
-
-| Federation | Address | Description |
-|------------|---------|-------------|
-| `local-deployment` | 127.0.0.1:9093 | Local processes |
-| `remote-deployment` | cloud-vm:9093 | Remote Docker |
-| `k8s-deployment` | 127.0.0.1:9093 | K8s (via port-forward) |
-
-### Training Configuration
+### Training Parameters
 
 ```toml
 [tool.flwr.app.config]
@@ -161,13 +98,3 @@ Simple CNN for CIFAR-10 image classification:
 - Max pooling after each conv layer
 - 2 fully connected layers (1024 → 64 → 10)
 - FedAvg aggregation strategy
-
-## Troubleshooting
-
-### Connection refused
-- Ensure SuperLink is running and healthy
-- Verify port mappings in Docker/K8s
-
-### K8s pods not starting
-- Check logs: `kubectl logs -n flower <pod-name>`
-- Check image availability: `kubectl describe pod -n flower <pod-name>`

@@ -1,0 +1,26 @@
+apiVersion: addon.open-cluster-management.io/v1alpha1
+kind: ClusterManagementAddOn
+metadata:
+  name: flower-addon
+  annotations:
+    addon.open-cluster-management.io/lifecycle: addon-manager
+spec:
+  addOnMeta:
+    displayName: Flower Federated Learning
+    description: |
+      Flower Federated Learning addon enables distributed machine learning across
+      managed clusters using the Flower framework. It deploys SuperNode agents on
+      managed clusters that connect to a central SuperLink server on the hub.
+  supportedConfigs:
+    - group: addon.open-cluster-management.io
+      resource: addondeploymentconfigs
+  installStrategy:
+    type: Placements
+    placements:
+      - name: flower-addon-placement
+        namespace: open-cluster-management
+        configs:
+          - group: addon.open-cluster-management.io
+            resource: addondeploymentconfigs
+            name: flower-addon-config
+            namespace: open-cluster-management

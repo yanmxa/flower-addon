@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .FlowerAddonNamespace | default "flower-addon" }}
+  labels:
+    app.kubernetes.io/name: flower-addon
+    app.kubernetes.io/managed-by: open-cluster-management
