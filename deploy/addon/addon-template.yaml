@@ -35,7 +35,8 @@ spec:
             labels:
               app.kubernetes.io/name: flower-addon
               app.kubernetes.io/component: supernode
-              cluster: "{{CLUSTER_NAME}}"
+            annotations:
+              cluster-name: "{{CLUSTER_NAME}}"
           spec:
             replicas: 1
             selector:
@@ -47,7 +48,8 @@ spec:
                 labels:
                   app.kubernetes.io/name: flower-addon
                   app.kubernetes.io/component: supernode
-                  cluster: "{{CLUSTER_NAME}}"
+                annotations:
+                  cluster-name: "{{CLUSTER_NAME}}"
               spec:
                 serviceAccountName: flower-supernode
                 containers:
