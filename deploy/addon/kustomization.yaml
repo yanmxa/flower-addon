@@ -5,4 +5,5 @@ resources:
   - addon-template.yaml
   - addon-deployment-config.yaml
   - placement.yaml
+  - managedclustersetbinding.yaml
   - clustermanagementaddon.yaml
