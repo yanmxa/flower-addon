@@ -107,7 +107,7 @@ flower-supernode-xxxxxxxxx-xxxxx   1/1     Running   0          5m
 Check SuperNode logs to ensure it connected to SuperLink:
 
 ```bash
-kubectl logs -n open-cluster-management-agent-addon -l app=flower-supernode --context kind-cluster1
+kubectl logs -n open-cluster-management-agent-addon -l app.kubernetes.io/component=supernode --context kind-cluster1
 ```
 
 Look for connection messages indicating successful SuperLink connection.
