@@ -87,26 +87,6 @@ kubectl label managedcluster cluster1 gpu-
 
 The ManagedClusterAddOn and SuperNode pod will be automatically removed.
 
-## Configuration Files
-
-### GPU Clusters (`deploy/addon/auto-install/gpu-clusters/`)
-
-| File | Description |
-|------|-------------|
-| `placement.yaml` | Selects clusters with `gpu=true` label |
-| `managedclustersetbinding.yaml` | Binds `default` cluster set |
-| `clustermanagementaddon-patch.yaml` | Patches to Placements mode |
-| `kustomization.yaml` | Kustomize configuration |
-
-### All Clusters (`deploy/addon/auto-install/all-clusters/`)
-
-| File | Description |
-|------|-------------|
-| `placement.yaml` | Selects all clusters in `global` cluster set |
-| `managedclustersetbinding.yaml` | Binds `global` cluster set |
-| `clustermanagementaddon-patch.yaml` | Patches to Placements mode |
-| `kustomization.yaml` | Kustomize configuration |
-
 ## Switching Between Manual and Auto-Install
 
 ### From Manual to Auto-Install
