@@ -16,14 +16,10 @@ all: help
 .PHONY: build-images
 build-images: ## Build custom SuperLink and SuperNode images with ML dependencies
 	@echo "Building custom SuperLink image..."
-	cp pyproject.toml deploy/superlink/
 	docker build -t $(SUPERLINK_IMAGE) deploy/superlink/
-	rm deploy/superlink/pyproject.toml
 	@echo ""
 	@echo "Building custom SuperNode image..."
-	cp pyproject.toml deploy/supernode/
 	docker build -t $(SUPERNODE_IMAGE) deploy/supernode/
-	rm deploy/supernode/pyproject.toml
 	@echo ""
 	@echo "Images built successfully!"
 	@echo "  - $(SUPERLINK_IMAGE)"

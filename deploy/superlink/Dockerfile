@@ -1,8 +1,7 @@
 FROM flwr/superlink:1.25.0
 
-# Copy pyproject.toml and install dependencies
-COPY pyproject.toml .
-
-# Remove flwr dependency (already installed) and install other deps
-RUN sed -i 's/.*flwr.*//' pyproject.toml && \
-    python -m pip install -U --no-cache-dir .
+# Install ML dependencies directly (flwr is already installed in base image)
+RUN python -m pip install -U --no-cache-dir \
+    "flwr-datasets[vision]>=0.5.0" \
+    "torch>=2.0.0" \
+    "torchvision>=0.15.0"
