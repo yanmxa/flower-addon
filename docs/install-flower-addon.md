@@ -122,16 +122,16 @@ Check SuperNode pods on managed clusters:
 
 ```bash
 # On cluster1
-kubectl --context kind-cluster1 get pods -n flower-addon
+kubectl --context kind-cluster1 get pods -n open-cluster-management-agent-addon
 
 # On cluster2
-kubectl --context kind-cluster2 get pods -n flower-addon
+kubectl --context kind-cluster2 get pods -n open-cluster-management-agent-addon
 ```
 
 View SuperNode logs to confirm connection to SuperLink:
 
 ```bash
-kubectl --context kind-cluster1 logs -n flower-addon -l app.kubernetes.io/component=supernode
+kubectl --context kind-cluster1 logs -n open-cluster-management-agent-addon -l app.kubernetes.io/component=supernode
 ```
 
 ## Quick Setup (One Command)
@@ -230,7 +230,7 @@ make status
 
 1. **Check pod events**:
    ```bash
-   kubectl --context <cluster-context> describe pod -n flower-addon -l app.kubernetes.io/component=supernode
+   kubectl --context <cluster-context> describe pod -n open-cluster-management-agent-addon -l app.kubernetes.io/component=supernode
    ```
 
 2. **Check image pull status** - ensure the cluster can pull `flwr/supernode` image.

@@ -92,10 +92,10 @@ Check that the SuperNode pod is running on the managed cluster:
 
 ```bash
 # Check pod status (use the managed cluster context)
-kubectl get pods -n flower-addon --context kind-cluster1
+kubectl get pods -n open-cluster-management-agent-addon --context kind-cluster1
 
 # Verify pod is ready
-kubectl get pods -n flower-addon --context kind-cluster1 -o wide
+kubectl get pods -n open-cluster-management-agent-addon --context kind-cluster1 -o wide
 ```
 
 Expected output:
@@ -107,7 +107,7 @@ flower-supernode-xxxxxxxxx-xxxxx   1/1     Running   0          5m
 Check SuperNode logs to ensure it connected to SuperLink:
 
 ```bash
-kubectl logs -n flower-addon -l app=flower-supernode --context kind-cluster1
+kubectl logs -n open-cluster-management-agent-addon -l app=flower-supernode --context kind-cluster1
 ```
 
 Look for connection messages indicating successful SuperLink connection.
