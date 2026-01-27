@@ -1,7 +1,10 @@
-FROM flwr/superlink:1.25.0
+FROM python:3.11-slim
 
-# Install ML dependencies directly (flwr is already installed in base image)
-# PyTorch 2.6+ supports Python 3.13
+# Install flwr and ML dependencies
 RUN python -m pip install -U --no-cache-dir \
+    "flwr>=1.25.0" \
     "flwr-datasets[vision]>=0.5.0" \
     torch torchvision
+
+# Set entrypoint to flower-superlink
+ENTRYPOINT ["flower-superlink"]
