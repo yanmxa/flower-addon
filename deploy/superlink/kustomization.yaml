@@ -4,3 +4,10 @@ resources:
   - namespace.yaml
   - deployment.yaml
   - service.yaml
+
+# Override SuperLink image with custom image containing ML dependencies
+# Uncomment and modify after running: make build-images
+# images:
+#   - name: flwr/superlink
+#     newName: localhost:5000/flower-superlink
+#     newTag: "1.25.0"

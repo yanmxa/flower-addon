@@ -3,32 +3,33 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "numpy-fl"
+name = "cifar10"
 version = "1.0.0"
-description = "Lightweight Federated Learning with NumPy (Linear Regression)"
+description = "CIFAR-10 Image Classification with Federated Learning (FedAvg + CNN)"
 license = "Apache-2.0"
 dependencies = [
     "flwr>=1.23.0",
-    "numpy>=1.21.0",
+    "flwr-datasets[vision]>=0.5.0",
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["numpy_fl"]
+packages = ["cifar10"]
 
 [tool.flwr.app]
 publisher = "local"
 
 [tool.flwr.app.components]
-serverapp = "numpy_fl.server_app:app"
-clientapp = "numpy_fl.client_app:app"
+serverapp = "cifar10.server_app:app"
+clientapp = "cifar10.client_app:app"
 
 [tool.flwr.app.config]
 num-server-rounds = 3
 fraction-evaluate = 0.5
-local-epochs = 10
-learning-rate = 0.01
-n-features = 10
-n-samples = 100
+local-epochs = 1
+learning-rate = 0.1
+batch-size = 32
 
 [tool.flwr.federations]
 default = "local-deployment"

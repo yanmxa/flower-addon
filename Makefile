@@ -2,12 +2,43 @@
 KUBECTL ?= kubectl
 NAMESPACE ?= open-cluster-management
 
-# Image configuration (official Flower images)
+# Image configuration
 FLOWER_VERSION ?= 1.25.0
-SUPERNODE_IMAGE ?= flwr/supernode:$(FLOWER_VERSION)
+IMAGE_REGISTRY ?= localhost:5000
+SUPERLINK_IMAGE ?= $(IMAGE_REGISTRY)/flower-superlink:$(FLOWER_VERSION)
+SUPERNODE_IMAGE ?= $(IMAGE_REGISTRY)/flower-supernode:$(FLOWER_VERSION)
 
 .PHONY: all
 all: help
+
+##@ Image Build
+
+.PHONY: build-images
+build-images: ## Build custom SuperLink and SuperNode images with ML dependencies
+	@echo "Building custom SuperLink image..."
+	cp pyproject.toml deploy/superlink/
+	docker build -t $(SUPERLINK_IMAGE) deploy/superlink/
+	rm deploy/superlink/pyproject.toml
+	@echo ""
+	@echo "Building custom SuperNode image..."
+	cp pyproject.toml deploy/supernode/
+	docker build -t $(SUPERNODE_IMAGE) deploy/supernode/
+	rm deploy/supernode/pyproject.toml
+	@echo ""
+	@echo "Images built successfully!"
+	@echo "  - $(SUPERLINK_IMAGE)"
+	@echo "  - $(SUPERNODE_IMAGE)"
+
+.PHONY: push-images
+push-images: ## Push custom images to registry
+	docker push $(SUPERLINK_IMAGE)
+	docker push $(SUPERNODE_IMAGE)
+
+.PHONY: load-images-kind
+load-images-kind: ## Load images into kind clusters
+	kind load docker-image $(SUPERLINK_IMAGE) --name hub
+	kind load docker-image $(SUPERNODE_IMAGE) --name cluster1
+	kind load docker-image $(SUPERNODE_IMAGE) --name cluster2
 
 ##@ SuperLink Deployment
 
