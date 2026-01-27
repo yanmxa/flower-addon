@@ -61,6 +61,14 @@ NAME        TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)
 superlink   NodePort   10.96.xxx.xxx   <none>        9091:30091/TCP,9092:30092/TCP,9093:30093/TCP
 ```
 
+Check SuperLink logs to verify it started correctly:
+
+```bash
+kubectl logs -n flower-system -l app.kubernetes.io/component=superlink --tail=10
+```
+
+Look for startup messages. Once SuperNodes connect, you'll see `[Fleet.PullMessages]` entries.
+
 ## Step 2: Deploy OCM Addon Resources
 
 Deploy the OCM addon configuration (AddOnTemplate, ClusterManagementAddon, etc.):
