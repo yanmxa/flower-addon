@@ -26,10 +26,11 @@ Flower Addon leverages OCM's multi-cluster management capabilities to automate t
 
 | Capability | Description |
 |------------|-------------|
-| **Deployment** | Simplify [SuperNodes](https://flower.ai/docs/framework/ref-api/flwr.supernode.html) deployment to managed clusters with [OCM Addon](https://open-cluster-management.io/concepts/addon/) |
+| **Deployment** | Simplify [SuperNodes](https://flower.ai/docs/framework/ref-api/flwr.supernode.html) deployment to clusters/devices with [OCM Addon](https://open-cluster-management.io/concepts/addon/) |
 | **Registration** | SuperNodes automatically register with [SuperLink](https://flower.ai/docs/framework/ref-api/flwr.superlink.html), establishing secure connections |
 | **Scheduling** | Select target clusters/devices using [Placement](https://open-cluster-management.io/concepts/placement/) based on labels, resources, topology, or custom strategies |
 | **Membership** | Dynamically adjust participating clusters based on cluster status or attributes |
+| **Application Distribution** | Distribute [ClientApp](https://flower.ai/docs/framework/docker/tutorial-quickstart-docker.html) via [ManifestWorkReplicaSet](https://open-cluster-management.io/docs/concepts/work-distribution/manifestworkreplicaset/) for [process isolation mode](https://flower.ai/docs/framework/docker/tutorial-quickstart-docker.html) |
 
 ## Architecture
 
@@ -74,14 +75,15 @@ See the [Install Guide](docs/install-flower-addon.md) for detailed instructions.
 
 ### Planned
 - [ ] TLS-secured SuperNode-SuperLink connections via Addon auto-registration
-- [ ] Process mode for federated applications (custom application images)
-- [ ] Data-aware scheduling for federated workloads
+- [ ] Process isolation mode on OCM (ServerApp/ClientApp via Docker)
+- [ ] Automatic ClientApp distribution via ManifestWorkReplicaSet
 
 ## Documentation
 
 - [Install Flower Addon Guide](docs/install-flower-addon.md) - Installation, configuration, and troubleshooting
 - [Auto-Install with Placement](docs/auto-install-by-placement.md) - Automatic deployment using OCM Placement
 - [Run Federated Learning Applications](docs/run-federated-app.md) - Submit and monitor FL jobs
+- [Integration Proposal](docs/proposal-flower-ocm-integration.md) - Proposal for Flower and OCM communities
 
 ## Related Projects
 

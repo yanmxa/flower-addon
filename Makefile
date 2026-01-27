@@ -2,11 +2,9 @@
 KUBECTL ?= kubectl
 NAMESPACE ?= open-cluster-management
 
-# Image configuration
-FLOWER_VERSION ?= 1.25.0
-IMAGE_REGISTRY ?= localhost:5000
-SUPERLINK_IMAGE ?= $(IMAGE_REGISTRY)/flower-superlink:$(FLOWER_VERSION)
-SUPERNODE_IMAGE ?= $(IMAGE_REGISTRY)/flower-supernode:$(FLOWER_VERSION)
+# Image configuration (default: official Flower images)
+SUPERLINK_IMAGE ?= flwr/superlink:1.25.0
+SUPERNODE_IMAGE ?= flwr/supernode:1.25.0
 
 .PHONY: all
 all: help

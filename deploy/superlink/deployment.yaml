@@ -30,7 +30,7 @@ spec:
       serviceAccountName: superlink
       containers:
       - name: superlink
-        image: localhost:5000/flower-superlink:1.25.0
+        image: flwr/superlink:1.25.0
         imagePullPolicy: IfNotPresent
         args:
         - "--insecure"
