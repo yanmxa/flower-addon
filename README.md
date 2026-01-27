@@ -1,20 +1,46 @@
 # Flower Addon for Open Cluster Management
 
-Deploy Flower federated learning (SuperLink + SuperNode) across OCM managed clusters.
+Integrate [Flower Federated Learning](https://flower.ai) with [Open Cluster Management (OCM)](https://open-cluster-management.io) to enable automated distribution and orchestration of federated learning workloads across multi-cloud environments.
 
-> **Note**: Uses insecure mode for simplicity. Enable TLS for production.
+## Why This Project?
+
+### The Challenge
+
+Deploying federated learning at scale across multiple clusters and edge devices presents significant operational challenges:
+
+- **Complex Deployment**: SuperNodes must be deployed and configured on each participating cluster
+- **Registration Overhead**: Manual registration of SuperNodes with the central SuperLink
+- **Security Configuration**: Setting up secure TLS connections between distributed components
+- **Dynamic Membership**: Managing which clusters participate based on resources, location, or data availability
+
+### The Solution
+
+Flower Addon leverages OCM's multi-cluster management capabilities to automate the entire federated learning infrastructure lifecycle:
+
+- **Declarative Deployment**: Define once, deploy everywhere through OCM's addon framework
+- **Automatic Registration**: SuperNodes automatically discover and register with SuperLink
+- **Policy-Based Placement**: Use OCM Placement to select clusters by attributes (GPU, region, labels)
+- **Dynamic Scaling**: Automatically adjust federation membership as clusters join or leave
+
+## Features
+
+| Capability | Description |
+|------------|-------------|
+| **Deployment** | Simplify [SuperNodes](https://flower.ai/docs/framework/ref-api/flwr.supernode.html) deployment to managed clusters with [OCM Addon](https://open-cluster-management.io/concepts/addon/) |
+| **Registration** | SuperNodes automatically register with [SuperLink](https://flower.ai/docs/framework/ref-api/flwr.superlink.html), establishing secure connections |
+| **Scheduling** | Select target clusters/devices using [Placement](https://open-cluster-management.io/concepts/placement/) based on labels, resources, topology, or custom strategies |
+| **Membership** | Dynamically adjust participating clusters based on cluster status or attributes |
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      Hub Cluster                             │
+│                        Hub Cluster                          │
 │  ┌────────────────────────────────────────────────────────┐ │
-│  │  SuperLink (flower-system)      NodePort: 30091-30093  │ │
+│  │  SuperLink (Federated Learning Coordinator)            │ │
 │  └────────────────────────────────────────────────────────┘ │
 │  ┌────────────────────────────────────────────────────────┐ │
-│  │  OCM Addon (open-cluster-management)                   │ │
-│  │  AddOnTemplate → ClusterManagementAddon → Placement    │ │
+│  │  OCM Addon                                             │ │
 │  └────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
                               │
@@ -22,44 +48,42 @@ Deploy Flower federated learning (SuperLink + SuperNode) across OCM managed clus
               ▼                               ▼
 ┌─────────────────────────────┐ ┌─────────────────────────────┐
 │   Managed Cluster 1         │ │   Managed Cluster 2         │
-│   SuperNode (partition=0)   │ │   SuperNode (partition=1)   │
+│   SuperNode (auto-deployed) │ │   SuperNode (auto-deployed) │
 └─────────────────────────────┘ └─────────────────────────────┘
 ```
 
 ## Quick Start
 
 ```bash
-# One-step setup: deploy SuperLink, addon, and enable on cluster1/cluster2
+# Deploy SuperLink, addon, and enable on managed clusters
 make setup-clusters
 
-# Check status
+# Check deployment status
 make status
 ```
 
-### Step-by-Step
+See the [Install Guide](docs/install-flower-addon.md) for detailed instructions.
 
-```bash
-# 1. Deploy SuperLink on hub
-make deploy-superlink
+## Roadmap
 
-# 2. Deploy OCM addon resources
-make deploy-addon
-make update-superlink-address
+### Completed
 
-# 3. Enable addon on managed clusters
-make enable-addon CLUSTER=cluster1
-make enable-addon CLUSTER=cluster2
-```
+- [x] Flower deployment to managed clusters via [OCM Addon](docs/install-flower-addon.md)
+- [x] Flower scheduling across clusters via [OCM Placement](docs/auto-install-by-placement.md)
+- [x] Run federated learning applications in OCM environment ([Guide](docs/run-federated-app.md))
+
+### Planned
+- [ ] TLS-secured SuperNode-SuperLink connections via Addon auto-registration
+- [ ] Process mode for federated applications (custom application images)
+- [ ] Data-aware scheduling for federated workloads
 
 ## Documentation
 
-- [Install Flower Addon Guide](docs/install-flower-addon.md) - Manual installation, configuration, and troubleshooting
-- [Auto-Install with Placement](docs/auto-install-by-placement.md) - Automatic deployment using OCM Placement (GPU clusters, all clusters)
+- [Install Flower Addon Guide](docs/install-flower-addon.md) - Installation, configuration, and troubleshooting
+- [Auto-Install with Placement](docs/auto-install-by-placement.md) - Automatic deployment using OCM Placement
+- [Run Federated Learning Applications](docs/run-federated-app.md) - Submit and monitor FL jobs
 
-## Local Development
+## Related Projects
 
-```bash
-uv venv .venv --seed
-.venv/bin/pip install -e .
-flwr run . local-deployment --stream
-```
+- [Flower](https://flower.ai) - A friendly federated learning framework
+- [Open Cluster Management](https://open-cluster-management.io) - Multi-cluster management for Kubernetes

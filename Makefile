@@ -150,6 +150,19 @@ setup-clusters: deploy-all ## Deploy hub and configure example clusters (cluster
 	@echo ""
 	@echo "Setup complete! Check addon status with: make status"
 
+##@ Federated Learning
+
+.PHONY: run-app
+run-app: ## Run federated learning app on OCM federation
+	@HUB_IP=$$($(KUBECTL) get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}'); \
+	echo "Submitting FL app to SuperLink at $$HUB_IP:30093..."; \
+	flwr run . ocm-deployment --federation-config address="$$HUB_IP:30093" --stream
+
+.PHONY: app-logs
+app-logs: ## Show FL infrastructure logs
+	@echo "=== SuperLink Logs ==="
+	@$(KUBECTL) logs -n flower-system -l app.kubernetes.io/component=superlink --tail=30
+
 ##@ Status
 
 .PHONY: status
