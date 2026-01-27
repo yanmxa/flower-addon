@@ -75,7 +75,42 @@ kubectl get placementdecisions -n open-cluster-management
 
 # Check auto-created ManagedClusterAddOns
 kubectl get managedclusteraddons -A
+
+# Verify ManagedClusterAddOn is available
+kubectl get managedclusteraddon -n cluster1 flower-addon
 ```
+
+Expected output:
+```
+NAME           AVAILABLE   DEGRADED   PROGRESSING
+flower-addon   True                   False
+```
+
+### Step 4: Verify SuperNode Pod Running
+
+Check that the SuperNode pod is running on the managed cluster:
+
+```bash
+# Check pod status (use the managed cluster context)
+kubectl get pods -n flower-addon --context kind-cluster1
+
+# Verify pod is ready
+kubectl get pods -n flower-addon --context kind-cluster1 -o wide
+```
+
+Expected output:
+```
+NAME                               READY   STATUS    RESTARTS   AGE
+flower-supernode-xxxxxxxxx-xxxxx   1/1     Running   0          5m
+```
+
+Check SuperNode logs to ensure it connected to SuperLink:
+
+```bash
+kubectl logs -n flower-addon -l app=flower-supernode --context kind-cluster1
+```
+
+Look for connection messages indicating successful SuperLink connection.
 
 ### Removing a Cluster from Auto-Install
 
