@@ -54,14 +54,14 @@ undeploy-superlink: ## Remove SuperLink from hub cluster
 .PHONY: deploy-addon
 deploy-addon: ## Deploy OCM addon template resources (AddOnTemplate, ClusterManagementAddOn in Manual mode)
 	@echo "Deploying OCM addon template resources..."
-	$(KUBECTL) apply -k deploy/addon-template/
+	$(KUBECTL) apply -k deploy/supernode/
 	@echo ""
 	@echo "Addon template deployment complete!"
 	@echo "Next: Update SuperLink address with: make update-superlink-address"
 
 .PHONY: undeploy-addon
 undeploy-addon: ## Remove OCM addon template resources
-	$(KUBECTL) delete -k deploy/addon-template/ --ignore-not-found
+	$(KUBECTL) delete -k deploy/supernode/ --ignore-not-found
 
 .PHONY: update-superlink-address
 update-superlink-address: ## Update SuperLink address with hub node IP
