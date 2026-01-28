@@ -18,11 +18,11 @@ Flower Addon leverages OCM's multi-cluster management to address these challenge
 
 | Capability | Description |
 |------------|-------------|
-| **Deployment** | Simplify [SuperNodes](https://flower.ai/docs/framework/ref-api/flwr.supernode.html) deployment to clusters/devices with [OCM Addon](https://open-cluster-management.io/concepts/addon/) |
-| **Registration** | SuperNodes automatically register with [SuperLink](https://flower.ai/docs/framework/ref-api/flwr.superlink.html), establishing secure connections |
-| **Scheduling** | Select target clusters/devices using [Placement](https://open-cluster-management.io/concepts/placement/) based on labels, resources, topology, or custom strategies |
-| **Membership** | Dynamically adjust participating clusters based on cluster status or attributes |
-| **Application Distribution** | Distribute [ClientApp](https://flower.ai/docs/framework/docker/tutorial-quickstart-docker.html) via [ManifestWorkReplicaSet](https://open-cluster-management.io/docs/concepts/work-distribution/manifestworkreplicaset/) for [process isolation mode](https://flower.ai/docs/framework/docker/tutorial-quickstart-docker.html) |
+| **Deployment** | Declarative SuperNode deployment across clusters via [OCM Addon](https://open-cluster-management.io/concepts/addon/) |
+| **Registration** | Automatic SuperNode registration with [SuperLink](https://flower.ai/docs/framework/ref-api/flwr.superlink.html) via secure connections |
+| **Scheduling** | Auto-select target clusters using [Placement](https://open-cluster-management.io/concepts/placement/) based on resources, labels, or custom strategies |
+| **Scaling** | Horizontal scaling of SuperNodes based on cluster status via Placement decisions |
+| **Application Distribution** | Distribute [ClientApp](https://flower.ai/docs/framework/docker/tutorial-quickstart-docker.html) containers via [ManifestWorkReplicaSet](https://open-cluster-management.io/docs/concepts/work-distribution/manifestworkreplicaset/) for process isolation mode |
 
 ## Architecture
 
