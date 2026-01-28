@@ -18,7 +18,7 @@ spec:
           kind: ServiceAccount
           metadata:
             name: superexec-clientapp
-            namespace: flower-addon
+            namespace: open-cluster-management-agent-addon
             labels:
               app.kubernetes.io/name: flower-addon
               app.kubernetes.io/component: superexec-clientapp
@@ -27,7 +27,7 @@ spec:
           kind: Deployment
           metadata:
             name: superexec-clientapp
-            namespace: flower-addon
+            namespace: open-cluster-management-agent-addon
             labels:
               app.kubernetes.io/name: flower-addon
               app.kubernetes.io/component: superexec-clientapp
@@ -50,7 +50,8 @@ spec:
                     imagePullPolicy: IfNotPresent
                     args:
                       - "--insecure"
-                      - "--clientappio-api-address=flower-supernode:9094"
+                      - "--appio-api-address=flower-supernode:9094"
+                      - "--plugin-type=clientapp"
 ---
 # Placement to select clusters with flower-addon enabled
 apiVersion: cluster.open-cluster-management.io/v1beta1

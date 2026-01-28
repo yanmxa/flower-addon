@@ -36,4 +36,5 @@ spec:
           imagePullPolicy: IfNotPresent
           args:
             - "--insecure"
-            - "--executor-api-address=superlink-internal:9091"
+            - "--appio-api-address=superlink-internal:9091"
+            - "--plugin-type=serverapp"
