@@ -1,40 +1,38 @@
+{{- if .Values.superlink.enabled }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: superlink
-  namespace: flower-system
+  namespace: {{ .Values.superlink.namespace }}
   labels:
-    app.kubernetes.io/name: flower
-    app.kubernetes.io/component: superlink
+    {{- include "flower-addon.superlinkLabels" . | nindent 4 }}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: superlink
-  namespace: flower-system
+  namespace: {{ .Values.superlink.namespace }}
   labels:
-    app.kubernetes.io/name: flower
-    app.kubernetes.io/component: superlink
+    {{- include "flower-addon.superlinkLabels" . | nindent 4 }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: flower
-      app.kubernetes.io/component: superlink
+      {{- include "flower-addon.superlinkSelectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: flower
-        app.kubernetes.io/component: superlink
+        {{- include "flower-addon.superlinkSelectorLabels" . | nindent 8 }}
     spec:
       serviceAccountName: superlink
       containers:
       - name: superlink
-        image: flwr/superlink:1.25.0
-        imagePullPolicy: IfNotPresent
+        image: {{ .Values.superlink.image.repository }}:{{ .Values.superlink.image.tag }}
+        imagePullPolicy: {{ .Values.superlink.image.pullPolicy }}
         args:
-        - "--insecure"
-        - "--isolation=subprocess"
+        {{- range .Values.superlink.args }}
+        - {{ . | quote }}
+        {{- end }}
         ports:
         - name: exec
           containerPort: 9091
@@ -46,12 +44,7 @@ spec:
           containerPort: 9093
           protocol: TCP
         resources:
-          requests:
-            cpu: 200m
-            memory: 512Mi
-          limits:
-            cpu: 2000m
-            memory: 2Gi
+          {{- toYaml .Values.superlink.resources | nindent 10 }}
         livenessProbe:
           tcpSocket:
             port: 9092
@@ -62,3 +55,4 @@ spec:
             port: 9092
           initialDelaySeconds: 5
           periodSeconds: 5
+{{- end }}

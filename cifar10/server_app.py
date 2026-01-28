@@ -1,41 +1,61 @@
-"""Flower ServerApp for federated learning.
+"""cifar10: A Flower / PyTorch app."""
 
-This module defines the server-side logic for federated learning,
-including the aggregation strategy and server configuration.
-"""
+import torch
+from flwr.app import ArrayRecord, ConfigRecord, Context, MetricRecord
+from flwr.serverapp import Grid, ServerApp
+from flwr.serverapp.strategy import FedAvg
 
-from flwr.common import Context, ndarrays_to_parameters
-from flwr.server import ServerApp, ServerAppComponents, ServerConfig
-from flwr.server.strategy import FedAvg
+from cifar10.task import Net, load_centralized_dataset, test
 
-from cifar10.task import Net, get_weights
+# Create ServerApp
+app = ServerApp()
 
 
-def server_fn(context: Context) -> ServerAppComponents:
-    """Configure the server for federated learning."""
-    # Get run configuration
-    num_rounds = context.run_config.get("num-server-rounds", 3)
-    fraction_evaluate = context.run_config.get("fraction-evaluate", 0.5)
+@app.main()
+def main(grid: Grid, context: Context) -> None:
+    """Main entry point for the ServerApp."""
 
-    # Initialize model parameters
-    model = Net()
-    initial_parameters = ndarrays_to_parameters(get_weights(model))
+    # Read run config
+    fraction_evaluate: float = context.run_config["fraction-evaluate"]
+    num_rounds: int = context.run_config["num-server-rounds"]
+    lr: float = context.run_config["learning-rate"]
 
-    # Define the aggregation strategy
-    strategy = FedAvg(
-        fraction_fit=1.0,  # Sample 100% of available clients for training
-        fraction_evaluate=fraction_evaluate,
-        min_fit_clients=2,  # Minimum clients required for training
-        min_evaluate_clients=2,  # Minimum clients required for evaluation
-        min_available_clients=2,  # Minimum clients that need to be connected
-        initial_parameters=initial_parameters,
+    # Load global model
+    global_model = Net()
+    arrays = ArrayRecord(global_model.state_dict())
+
+    # Initialize FedAvg strategy
+    strategy = FedAvg(fraction_evaluate=fraction_evaluate)
+
+    # Start strategy, run FedAvg for `num_rounds`
+    result = strategy.start(
+        grid=grid,
+        initial_arrays=arrays,
+        train_config=ConfigRecord({"lr": lr}),
+        num_rounds=num_rounds,
+        evaluate_fn=global_evaluate,
     )
 
-    # Server configuration
-    config = ServerConfig(num_rounds=num_rounds)
+    # Save final model to disk
+    print("\nSaving final model to disk...")
+    state_dict = result.arrays.to_torch_state_dict()
+    torch.save(state_dict, "final_model.pt")
 
-    return ServerAppComponents(strategy=strategy, config=config)
 
+def global_evaluate(server_round: int, arrays: ArrayRecord) -> MetricRecord:
+    """Evaluate model on central data."""
 
-# Create the ServerApp
-app = ServerApp(server_fn=server_fn)
+    # Load the model and initialize it with the received weights
+    model = Net()
+    model.load_state_dict(arrays.to_torch_state_dict())
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+
+    # Load entire test set
+    test_dataloader = load_centralized_dataset()
+
+    # Evaluate the global model on the test set
+    test_loss, test_acc = test(model, test_dataloader, device)
+
+    # Return the evaluation metrics
+    return MetricRecord({"accuracy": test_acc, "loss": test_loss})

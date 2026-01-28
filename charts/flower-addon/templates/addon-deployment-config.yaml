@@ -1,0 +1,22 @@
+{{- if .Values.deploymentConfig.enabled }}
+apiVersion: addon.open-cluster-management.io/v1alpha1
+kind: AddOnDeploymentConfig
+metadata:
+  name: {{ .Values.deploymentConfig.name }}
+  namespace: {{ .Values.addon.namespace }}
+spec:
+  customizedVariables:
+    # SuperLink connection settings
+    - name: SUPERLINK_ADDRESS
+      value: {{ .Values.deploymentConfig.superlinkAddress | quote }}
+    - name: SUPERLINK_PORT
+      value: {{ .Values.deploymentConfig.superlinkPort | quote }}
+    # SuperNode image
+    - name: IMAGE
+      value: {{ include "flower-addon.supernodeImage" . | quote }}
+    # Partition settings (can be overridden per-cluster)
+    - name: PARTITION_ID
+      value: {{ .Values.supernode.partitionId | quote }}
+    - name: NUM_PARTITIONS
+      value: {{ .Values.supernode.numPartitions | quote }}
+{{- end }}

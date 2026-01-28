@@ -1,262 +1,104 @@
 # Run Federated Learning Applications
 
-This guide explains how to submit and run Flower federated learning applications on your OCM-managed federation.
+This guide builds and runs FL applications on OCM federation using process isolation mode. OCM automatically distributes ClientApp jobs to all managed clusters with the flower-addon enabled - no manual per-cluster deployment needed.
 
-## Prerequisites
+**What gets deployed:**
+- **SuperExec-ServerApp** on hub - Executes ServerApp (aggregation logic)
+- **SuperExec-ClientApp** on managed clusters - Executes ClientApp (local training)
 
-- **Infrastructure deployed**: Complete [Install Flower Addon Guide](install-flower-addon.md) first
-- **SuperNodes connected**: At least 2 SuperNodes connected to SuperLink
-- **Python environment**: `uv` or `pip` for running the Flower CLI
-- **flwr CLI**: Installed via `uv pip install flwr` or `pip install flwr`
+Both use a single `flower-app` image containing your ML code and dependencies (PyTorch, etc.). This separates application code from infrastructure (SuperLink/SuperNode use official images).
 
-Verify SuperNodes are connected:
-
-```bash
-kubectl logs -n flower-system -l app.kubernetes.io/component=superlink | grep "PullMessages"
-```
-
-You should see log entries like:
-
-```
-INFO :      [Fleet.PullMessages]
-```
+**Deployment method:**
+- ServerApp: Direct deployment to hub cluster
+- ClientApp: ManifestWorkReplicaSet distributes to clusters with flower-addon enabled
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  Developer Machine                                          │
-│  flwr run . ocm-deployment --stream                         │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼ (port 30093 - Exec API)
-┌─────────────────────────────────────────────────────────────┐
-│  Hub Cluster - SuperLink                                    │
-│  - Receives job submission                                  │
-│  - Executes ServerApp (subprocess mode)                     │
-│  - Coordinates training rounds                              │
-└─────────────────────────────────────────────────────────────┘
-                              │ (port 30092 - Fleet API)
-              ┌───────────────┴───────────────┐
-              ▼                               ▼
-┌─────────────────────────────┐ ┌─────────────────────────────┐
-│  Managed Cluster 1          │ │  Managed Cluster 2          │
-│  SuperNode (partition=0)    │ │  SuperNode (partition=1)    │
-│  - Executes ClientApp       │ │  - Executes ClientApp       │
-│  - Local training           │ │  - Local training           │
-└─────────────────────────────┘ └─────────────────────────────┘
+Hub Cluster                          Managed Clusters
+┌─────────────────────────┐          ┌─────────────────────────┐
+│  flower-system          │          │  flower-addon           │
+│  ├── SuperLink          │◄─────────│  ├── SuperNode          │
+│  │   (official image)   │          │  │   (official image)   │
+│  └── SuperExec-ServerApp│          │  └── SuperExec-ClientApp│
+│      (flower-app image) │          │      (flower-app image) │
+└─────────────────────────┘          └─────────────────────────┘
 ```
 
-**Execution Flow:**
+## Prerequisites
 
-1. Developer submits FL app via `flwr run` to SuperLink Exec API (port 30093)
-2. SuperLink executes ServerApp in subprocess mode
-3. SuperLink coordinates with SuperNodes via Fleet API (port 30092)
-4. Each SuperNode executes ClientApp, training on its local data partition
-5. ServerApp aggregates model updates using FedAvg strategy
-6. Process repeats for configured number of rounds
+- Infrastructure deployed: Complete [Install Flower Addon](install-flower-addon.md) first
+- At least 2 SuperNodes connected
 
-## Important: Subprocess Mode Dependencies
-
-SuperLink and SuperNodes run in **subprocess isolation mode**. In this mode:
-
-- ServerApp/ClientApp code is executed as subprocess within the container
-- **Dependencies must be pre-installed in the container image** - Flower does not install dependencies at runtime
-- The official `flwr/superlink` and `flwr/supernode` images are minimal and may not include ML libraries
-
-### Building Custom Images with Dependencies
-
-For applications requiring additional dependencies (e.g., PyTorch, TensorFlow):
+## Build and Deploy App
 
 ```bash
-# Build custom images with ML dependencies
-SUPERLINK_IMAGE=quay.io/open-cluster-management/flower-superlink:1.25.0 \
-SUPERNODE_IMAGE=quay.io/open-cluster-management/flower-supernode:1.25.0 \
-make build-images
+# Build app image
+make build-app
 
-# Load into Kind clusters (for local testing)
-make load-images-kind
+# Load into Kind clusters
+make load-app-kind
+
+# Deploy SuperExec components
+make deploy-app
 ```
 
-The Dockerfiles in `deploy/superlink/` and `deploy/supernode/` can be customized to include your application's dependencies.
-
-## Running the CIFAR-10 Example
-
-### Step 1: Set Up Python Environment
+Verify:
 
 ```bash
-# Create virtual environment and install dependencies
+# ServerApp on hub
+kubectl get pods -n flower-system -l app.kubernetes.io/component=superexec-serverapp
+
+# ClientApp on managed clusters
+kubectl --context kind-cluster1 get pods -n flower-addon -l app.kubernetes.io/component=superexec-clientapp
+```
+
+## Run FL Training
+
+```bash
+# Setup Python environment
 uv venv && uv pip install -e .
 
-# Or with pip
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
-```
-
-### Step 2: Verify Infrastructure Status
-
-```bash
-make status
-```
-
-Ensure:
-- SuperLink pod is Running
-- ManagedClusterAddons show `AVAILABLE: True`
-
-### Step 3: Submit the FL Application
-
-```bash
+# Submit FL app
 make run-app
 ```
 
-This command:
-1. Detects the hub node IP automatically
-2. Submits the CIFAR-10 app to SuperLink via Exec API (port 30093)
-3. Streams execution logs in real-time
-
-Expected output:
-
-```
-Submitting FL app to SuperLink at 192.168.x.x:30093...
-Loading project configuration...
-Success
-```
-
-### Step 4: Monitor Execution
-
-**Terminal 1 - Watch FL app execution** (already streaming from `make run-app`)
-
-**Terminal 2 - SuperLink logs** (ServerApp execution):
+## Monitor
 
 ```bash
-kubectl logs -n flower-system -l app.kubernetes.io/component=superlink -f
+# ServerApp logs
+kubectl logs -n flower-system -l app.kubernetes.io/component=superexec-serverapp -f
+
+# ClientApp logs
+kubectl --context kind-cluster1 logs -n flower-addon -l app.kubernetes.io/component=superexec-clientapp -f
 ```
 
-**Terminal 3 - SuperNode logs** (ClientApp execution):
+## Custom Image
+
+Build with custom registry:
 
 ```bash
-# Cluster 1
-kubectl --context kind-cluster1 logs -n open-cluster-management-agent-addon \
-  -l app.kubernetes.io/component=supernode -f
-
-# Cluster 2
-kubectl --context kind-cluster2 logs -n open-cluster-management-agent-addon \
-  -l app.kubernetes.io/component=supernode -f
+APP_IMAGE=quay.io/your-org/flower-app:1.0.0 make build-app
+APP_IMAGE=quay.io/your-org/flower-app:1.0.0 make push-app
 ```
 
-## Understanding the Output
+Update `cifar10/deploy/kustomization.yaml`:
 
-### ServerApp (SuperLink) Logs
-
-```
-INFO :      Starting Flower ServerApp, config: num_rounds=3, no round_timeout
-INFO :      [ROUND 1]
-INFO :      configure_fit: strategy sampled 2 clients (out of 2)
-INFO :      aggregate_fit: received 2 results and 0 failures
-INFO :      aggregate_evaluate: received 2 results and 0 failures
-INFO :      [ROUND 2]
-...
-INFO :      [ROUND 3]
-INFO :      aggregate_fit: received 2 results and 0 failures
-INFO :      aggregate_evaluate: received 2 results and 0 failures
-INFO :      Run finished 3 round(s)
-INFO :      History (loss, distributed):
-INFO :          round 1: 2.230
-INFO :          round 2: 2.364
-INFO :          round 3: 2.180
+```yaml
+images:
+  - name: flower-app
+    newName: quay.io/your-org/flower-app
+    newTag: "1.0.0"
 ```
 
-### ClientApp (SuperNode) Logs
-
-```
-INFO :      Starting Flower ClientApp
-INFO :      Partition ID: 0, Num Partitions: 2
-INFO :      Loading CIFAR-10 data partition 0/2
-INFO :      Training model on partition 0 for 1 epoch(s)
-INFO :      Epoch 1: Loss=1.234, Accuracy=0.456
-```
-
-## Make Targets
-
-| Target | Description |
-|--------|-------------|
-| `run-app` | Submit FL app to OCM federation |
-| `app-logs` | Show recent SuperLink logs |
-
-## Manual Execution
-
-If you need more control over the execution:
+Redeploy:
 
 ```bash
-# Get hub node IP
-HUB_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
-
-# Run with custom address
-flwr run . ocm-deployment --federation-config address="$HUB_IP:30093" --stream
+make deploy-app
 ```
 
-## Troubleshooting
+## Cleanup
 
-### "No SuperNodes connected"
-
-SuperLink requires at least 2 SuperNodes to start training.
-
-1. **Verify SuperNodes are running**:
-   ```bash
-   kubectl --context kind-cluster1 get pods -n open-cluster-management-agent-addon
-   kubectl --context kind-cluster2 get pods -n open-cluster-management-agent-addon
-   ```
-
-2. **Check SuperNode logs for connection errors**:
-   ```bash
-   kubectl --context kind-cluster1 logs -n open-cluster-management-agent-addon \
-     -l app.kubernetes.io/component=supernode
-   ```
-
-3. **Verify network connectivity** between SuperNodes and SuperLink port 30092.
-
-### "Connection refused" on Port 30093
-
-1. **Verify SuperLink service**:
-   ```bash
-   kubectl get svc -n flower-system superlink
-   ```
-
-2. **Check if port 30093 is accessible**:
-   ```bash
-   kubectl get nodes -o wide  # Get node IP
-   curl -v <node-ip>:30093    # Test connectivity
-   ```
-
-### Training Not Progressing
-
-1. **Check SuperLink logs** for errors:
-   ```bash
-   kubectl logs -n flower-system -l app.kubernetes.io/component=superlink --tail=100
-   ```
-
-2. **Check SuperNode logs** for training errors:
-   ```bash
-   kubectl --context kind-cluster1 logs -n open-cluster-management-agent-addon \
-     -l app.kubernetes.io/component=supernode --tail=100
-   ```
-
-3. **Verify partition configuration**:
-   ```bash
-   kubectl get addondeploymentconfigs -A -o yaml | grep -A5 PARTITION
-   ```
-
-### Slow Training
-
-The CIFAR-10 example downloads data on first run. Subsequent runs use cached data.
-
-For faster iterations during development:
-- Reduce `num-server-rounds` in `pyproject.toml`
-- Reduce `local-epochs` for quicker rounds
-
-## Next Steps
-
-- Modify `cifar10/server_app.py` to experiment with different aggregation strategies
-- Modify `cifar10/client_app.py` to customize local training
-- Create custom FL applications following the same structure
+```bash
+make undeploy-app
+```

@@ -1,9 +1,9 @@
 apiVersion: addon.open-cluster-management.io/v1alpha1
 kind: AddOnTemplate
 metadata:
-  name: flower-addon
+  name: {{ .Values.addon.name }}
 spec:
-  addonName: flower-addon
+  addonName: {{ .Values.addon.name }}
   agentSpec:
     workload:
       manifests:
@@ -36,7 +36,7 @@ spec:
               app.kubernetes.io/name: flower-addon
               app.kubernetes.io/component: supernode
             annotations:
-              cluster-name: "{{CLUSTER_NAME}}"
+              cluster-name: "{{`{{CLUSTER_NAME}}`}}"
           spec:
             replicas: 1
             selector:
@@ -49,31 +49,26 @@ spec:
                   app.kubernetes.io/name: flower-addon
                   app.kubernetes.io/component: supernode
                 annotations:
-                  cluster-name: "{{CLUSTER_NAME}}"
+                  cluster-name: "{{`{{CLUSTER_NAME}}`}}"
               spec:
                 serviceAccountName: flower-supernode
                 containers:
                   - name: supernode
-                    image: "{{IMAGE}}"
-                    imagePullPolicy: IfNotPresent
+                    image: "{{`{{IMAGE}}`}}"
+                    imagePullPolicy: {{ .Values.supernode.image.pullPolicy }}
                     args:
                       - "--insecure"
-                      - "--superlink={{SUPERLINK_ADDRESS}}:{{SUPERLINK_PORT}}"
+                      - "--superlink={{`{{SUPERLINK_ADDRESS}}`}}:{{`{{SUPERLINK_PORT}}`}}"
                       - "--node-config"
-                      - "partition-id={{PARTITION_ID}} num-partitions={{NUM_PARTITIONS}}"
-                      - "--isolation=subprocess"
+                      - "partition-id={{`{{PARTITION_ID}}`}} num-partitions={{`{{NUM_PARTITIONS}}`}}"
+                      - "--isolation=process"
                       - "--clientappio-api-address=0.0.0.0:9094"
                     ports:
                       - name: clientappio
                         containerPort: 9094
                         protocol: TCP
                     resources:
-                      requests:
-                        cpu: 100m
-                        memory: 256Mi
-                      limits:
-                        cpu: 1000m
-                        memory: 1Gi
+                      {{- toYaml .Values.supernode.resources | nindent 22 }}
                     livenessProbe:
                       tcpSocket:
                         port: 9094

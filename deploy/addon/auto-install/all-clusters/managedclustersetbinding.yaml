@@ -1,8 +1,0 @@
-# ManagedClusterSetBinding grants the addon placement access to the global ManagedClusterSet
-apiVersion: cluster.open-cluster-management.io/v1beta2
-kind: ManagedClusterSetBinding
-metadata:
-  name: global
-  namespace: open-cluster-management
-spec:
-  clusterSet: global

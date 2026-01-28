@@ -1,124 +1,120 @@
 # Kubernetes configuration
 KUBECTL ?= kubectl
+HELM ?= helm
 NAMESPACE ?= open-cluster-management
+RELEASE_NAME ?= flower-addon
+CHART_PATH ?= charts/flower-addon
 
 # Image configuration (default: official Flower images)
-SUPERLINK_IMAGE ?= flwr/superlink:1.25.0
-SUPERNODE_IMAGE ?= flwr/supernode:1.25.0
+SUPERLINK_IMAGE ?= flwr/superlink:1.25.0-py3.13-ubuntu24.04
+SUPERNODE_IMAGE ?= flwr/supernode:1.25.0-py3.13-ubuntu24.04
+APP_IMAGE ?= flower-app:1.0.0
 
 .PHONY: all
 all: help
 
 ##@ Image Build
 
-.PHONY: build-images
-build-images: ## Build custom SuperLink and SuperNode images with ML dependencies
-	@echo "Building custom SuperLink image..."
-	docker build -t $(SUPERLINK_IMAGE) deploy/superlink/
+.PHONY: build-app
+build-app: ## Build application image for process mode (single image for serverapp and clientapp)
+	@echo "Building application image for process mode..."
+	docker build -t $(APP_IMAGE) -f cifar10/Containerfile .
 	@echo ""
-	@echo "Building custom SuperNode image..."
-	docker build -t $(SUPERNODE_IMAGE) deploy/supernode/
+	@echo "Image built successfully: $(APP_IMAGE)"
+
+.PHONY: push-app
+push-app: ## Push application image to registry
+	docker push $(APP_IMAGE)
+
+.PHONY: load-app-kind
+load-app-kind: ## Load app image into kind clusters
+	kind load docker-image $(APP_IMAGE) --name hub
+	kind load docker-image $(APP_IMAGE) --name cluster1
+	kind load docker-image $(APP_IMAGE) --name cluster2
+
+##@ Helm Deployment
+
+.PHONY: deploy
+deploy: ## Deploy Flower addon using Helm (SuperLink + OCM addon)
+	@HUB_IP=$$($(KUBECTL) get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}'); \
+	echo "Deploying Flower addon with SuperLink address: $$HUB_IP"; \
+	$(HELM) upgrade --install $(RELEASE_NAME) $(CHART_PATH) \
+		--set deploymentConfig.superlinkAddress=$$HUB_IP \
+		--set supernode.image.repository=$$(echo $(SUPERNODE_IMAGE) | cut -d: -f1) \
+		--set supernode.image.tag=$$(echo $(SUPERNODE_IMAGE) | cut -d: -f2)
 	@echo ""
-	@echo "Images built successfully!"
-	@echo "  - $(SUPERLINK_IMAGE)"
-	@echo "  - $(SUPERNODE_IMAGE)"
-
-.PHONY: push-images
-push-images: ## Push custom images to registry
-	docker push $(SUPERLINK_IMAGE)
-	docker push $(SUPERNODE_IMAGE)
-
-.PHONY: load-images-kind
-load-images-kind: ## Load images into kind clusters
-	kind load docker-image $(SUPERLINK_IMAGE) --name hub
-	kind load docker-image $(SUPERNODE_IMAGE) --name cluster1
-	kind load docker-image $(SUPERNODE_IMAGE) --name cluster2
-
-##@ SuperLink Deployment
+	@echo "Deployment complete! Check status with: make status"
 
 .PHONY: deploy-superlink
-deploy-superlink: ## Deploy SuperLink on hub cluster
-	@echo "Deploying SuperLink..."
-	$(KUBECTL) apply -k deploy/superlink/
+deploy-superlink: ## Deploy only SuperLink on hub cluster
+	$(HELM) upgrade --install $(RELEASE_NAME) $(CHART_PATH) \
+		--set deploymentConfig.enabled=false
 	@echo ""
 	@echo "SuperLink deployment complete!"
-	@echo "Waiting for SuperLink to be ready..."
 	$(KUBECTL) wait --for=condition=available --timeout=120s deployment/superlink -n flower-system || true
 
-.PHONY: undeploy-superlink
-undeploy-superlink: ## Remove SuperLink from hub cluster
-	$(KUBECTL) delete -k deploy/superlink/ --ignore-not-found
+.PHONY: undeploy
+undeploy: ## Remove Flower addon using Helm
+	$(HELM) uninstall $(RELEASE_NAME) || true
+	$(KUBECTL) delete namespace flower-system --ignore-not-found
 
-##@ OCM Addon Deployment
-
-.PHONY: deploy-addon
-deploy-addon: ## Deploy OCM addon template resources (AddOnTemplate, ClusterManagementAddOn in Manual mode)
-	@echo "Deploying OCM addon template resources..."
-	$(KUBECTL) apply -k deploy/supernode/
-	@echo ""
-	@echo "Addon template deployment complete!"
-	@echo "Next: Update SuperLink address with: make update-superlink-address"
-
-.PHONY: undeploy-addon
-undeploy-addon: ## Remove OCM addon template resources
-	$(KUBECTL) delete -k deploy/supernode/ --ignore-not-found
-
-.PHONY: update-superlink-address
-update-superlink-address: ## Update SuperLink address with hub node IP
+.PHONY: upgrade
+upgrade: ## Upgrade Flower addon with new values
 	@HUB_IP=$$($(KUBECTL) get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}'); \
-	echo "Hub Node IP: $$HUB_IP"; \
-	$(KUBECTL) patch addondeploymentconfig flower-addon-config -n $(NAMESPACE) \
-		--type=json -p='[{"op":"replace","path":"/spec/customizedVariables/0/value","value":"'"$$HUB_IP"'"}]'
+	$(HELM) upgrade $(RELEASE_NAME) $(CHART_PATH) \
+		--set deploymentConfig.superlinkAddress=$$HUB_IP
 
-##@ Cluster Configuration
+##@ Placement-based Auto-Install
+
+.PHONY: deploy-auto-gpu
+deploy-auto-gpu: ## Deploy with auto-install for GPU clusters (clusters with gpu=true label)
+	@HUB_IP=$$($(KUBECTL) get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}'); \
+	$(HELM) upgrade --install $(RELEASE_NAME) $(CHART_PATH) \
+		--set deploymentConfig.superlinkAddress=$$HUB_IP \
+		--set addon.installStrategy=Placements \
+		--set placement.gpu.enabled=true
+	@echo ""
+	@echo "GPU auto-install deployed!"
+	@echo "Label clusters with: kubectl label managedcluster <cluster-name> gpu=true"
+
+.PHONY: deploy-auto-all
+deploy-auto-all: ## Deploy with auto-install for all clusters (global cluster set)
+	@HUB_IP=$$($(KUBECTL) get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}'); \
+	$(HELM) upgrade --install $(RELEASE_NAME) $(CHART_PATH) \
+		--set deploymentConfig.superlinkAddress=$$HUB_IP \
+		--set addon.installStrategy=Placements \
+		--set placement.all.enabled=true
+	@echo ""
+	@echo "All-clusters auto-install deployed!"
+
+##@ Manual Cluster Configuration
 
 .PHONY: enable-addon
 enable-addon: ## Enable addon on a cluster (usage: make enable-addon CLUSTER=cluster1)
 ifndef CLUSTER
 	$(error CLUSTER is not set. Usage: make enable-addon CLUSTER=cluster1)
 endif
-	@echo "Enabling flower-addon on cluster $(CLUSTER)..."
-	$(KUBECTL) apply -k deploy/addon/install/$(CLUSTER)/
+	@echo "Creating ManagedClusterAddOn for $(CLUSTER)..."
+	@echo "apiVersion: addon.open-cluster-management.io/v1alpha1" | \
+	{ cat; echo "kind: ManagedClusterAddOn"; } | \
+	{ cat; echo "metadata:"; } | \
+	{ cat; echo "  name: flower-addon"; } | \
+	{ cat; echo "  namespace: $(CLUSTER)"; } | \
+	{ cat; echo "spec:"; } | \
+	{ cat; echo "  installNamespace: flower-addon"; } | \
+	{ cat; echo "  configs:"; } | \
+	{ cat; echo "    - group: addon.open-cluster-management.io"; } | \
+	{ cat; echo "      resource: addondeploymentconfigs"; } | \
+	{ cat; echo "      name: flower-addon-config"; } | \
+	{ cat; echo "      namespace: $(NAMESPACE)"; } | \
+	$(KUBECTL) apply -f -
 
 .PHONY: disable-addon
 disable-addon: ## Disable addon on a cluster (usage: make disable-addon CLUSTER=cluster1)
 ifndef CLUSTER
 	$(error CLUSTER is not set. Usage: make disable-addon CLUSTER=cluster1)
 endif
-	$(KUBECTL) delete -k deploy/addon/install/$(CLUSTER)/ --ignore-not-found
-
-##@ Auto-Install (Placement-based)
-
-.PHONY: deploy-auto-gpu
-deploy-auto-gpu: ## Deploy auto-install for GPU clusters (clusters with gpu=true label)
-	@echo "Deploying auto-install configuration for GPU clusters..."
-	$(KUBECTL) apply -k deploy/addon/auto-install/gpu-clusters/
-	@echo ""
-	@echo "GPU auto-install deployed!"
-	@echo "Label clusters with: make label-gpu-cluster CLUSTER=<cluster-name>"
-
-.PHONY: deploy-auto-all
-deploy-auto-all: ## Deploy auto-install for all clusters (global cluster set)
-	@echo "Deploying auto-install configuration for all clusters..."
-	$(KUBECTL) apply -k deploy/addon/auto-install/all-clusters/
-	@echo ""
-	@echo "All-clusters auto-install deployed!"
-
-.PHONY: undeploy-auto-gpu
-undeploy-auto-gpu: ## Remove GPU auto-install configuration
-	$(KUBECTL) delete -k deploy/addon/auto-install/gpu-clusters/ --ignore-not-found
-
-.PHONY: undeploy-auto-all
-undeploy-auto-all: ## Remove all-clusters auto-install configuration
-	$(KUBECTL) delete -k deploy/addon/auto-install/all-clusters/ --ignore-not-found
-
-.PHONY: label-gpu-cluster
-label-gpu-cluster: ## Label a cluster for GPU auto-install (usage: make label-gpu-cluster CLUSTER=cluster1)
-ifndef CLUSTER
-	$(error CLUSTER is not set. Usage: make label-gpu-cluster CLUSTER=cluster1)
-endif
-	$(KUBECTL) label managedcluster $(CLUSTER) gpu=true --overwrite
-	@echo "Cluster $(CLUSTER) labeled with gpu=true"
+	$(KUBECTL) delete managedclusteraddon flower-addon -n $(CLUSTER) --ignore-not-found
 
 .PHONY: deploy-cluster-config
 deploy-cluster-config: ## Deploy per-cluster config (usage: make deploy-cluster-config CLUSTER=cluster1 PARTITION_ID=0 NUM_PARTITIONS=2)
@@ -154,18 +150,8 @@ endif
 
 ##@ Quick Setup
 
-.PHONY: deploy-all
-deploy-all: deploy-superlink deploy-addon update-superlink-address ## Deploy SuperLink and addon (one-step setup)
-	@echo ""
-	@echo "All hub components deployed!"
-	@echo "Enable addon on clusters with: make enable-addon CLUSTER=<cluster-name>"
-
-.PHONY: undeploy-all
-undeploy-all: undeploy-addon undeploy-superlink ## Remove all hub components
-	@echo "All hub components removed."
-
 .PHONY: setup-clusters
-setup-clusters: deploy-all ## Deploy hub and configure example clusters (cluster1, cluster2)
+setup-clusters: deploy ## Deploy hub and configure example clusters (cluster1, cluster2)
 	@echo "Setting up cluster1 (partition 0)..."
 	$(MAKE) deploy-cluster-config CLUSTER=cluster1 PARTITION_ID=0 NUM_PARTITIONS=2
 	$(MAKE) enable-addon CLUSTER=cluster1
@@ -174,6 +160,22 @@ setup-clusters: deploy-all ## Deploy hub and configure example clusters (cluster
 	$(MAKE) enable-addon CLUSTER=cluster2
 	@echo ""
 	@echo "Setup complete! Check addon status with: make status"
+
+##@ Application Deployment (Process Isolation Mode)
+
+.PHONY: deploy-app
+deploy-app: ## Deploy SuperExec app (serverapp on hub, clientapp via ManifestWorkReplicaSet)
+	@echo "Deploying SuperExec app..."
+	$(KUBECTL) apply -k cifar10/deploy/
+	@echo ""
+	@echo "App deployment complete!"
+	@echo "  - SuperExec-ServerApp: deployed to flower-system namespace"
+	@echo "  - SuperExec-ClientApp: distributed via ManifestWorkReplicaSet to clusters with flower-addon"
+
+.PHONY: undeploy-app
+undeploy-app: ## Remove SuperExec app deployments
+	$(KUBECTL) delete -k cifar10/deploy/ --ignore-not-found
+	@echo "App removal complete!"
 
 ##@ Federated Learning
 
@@ -184,14 +186,20 @@ run-app: ## Run federated learning app on OCM federation
 	flwr run . ocm-deployment --federation-config 'address="'"$$HUB_IP"':30093"' --stream
 
 .PHONY: app-logs
-app-logs: ## Show FL infrastructure logs
+app-logs: ## Show FL app logs (SuperExec components)
 	@echo "=== SuperLink Logs ==="
-	@$(KUBECTL) logs -n flower-system -l app.kubernetes.io/component=superlink --tail=30
+	@$(KUBECTL) logs -n flower-system -l app.kubernetes.io/component=superlink --tail=20
+	@echo ""
+	@echo "=== SuperExec-ServerApp Logs ==="
+	@$(KUBECTL) logs -n flower-system -l app.kubernetes.io/component=superexec-serverapp --tail=20
 
 ##@ Status
 
 .PHONY: status
 status: ## Show addon status
+	@echo "=== Helm Release ==="
+	$(HELM) list -a | grep $(RELEASE_NAME) || echo "No Helm release found"
+	@echo ""
 	@echo "=== SuperLink Status ==="
 	$(KUBECTL) get pods -n flower-system
 	@echo ""
@@ -212,6 +220,17 @@ status: ## Show addon status
 	@echo ""
 	@echo "=== ManagedClusterAddOns ==="
 	$(KUBECTL) get managedclusteraddons -A
+
+##@ Development
+
+.PHONY: lint
+lint: ## Lint the Helm chart
+	$(HELM) lint $(CHART_PATH)
+
+.PHONY: template
+template: ## Render Helm templates locally
+	@HUB_IP=$$($(KUBECTL) get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' 2>/dev/null || echo "192.168.1.1"); \
+	$(HELM) template $(RELEASE_NAME) $(CHART_PATH) --set deploymentConfig.superlinkAddress=$$HUB_IP
 
 ##@ Help
 
