@@ -8,7 +8,7 @@ Deploying federated learning at scale across multiple clusters and edge devices 
 
 - **Complex Deployment**: SuperNodes must be deployed and configured on each participating cluster
 - **Manual Registration**: SuperNodes need to be manually registered with the central SuperLink
-- **Collaborator Scheduling**: Manually select clusters based on resources (GPU, memory), location, or data availability
+- **Collaborator Scheduling**: SuperNodes cannot automatically discover suitable clusters, requiring manual selection and deployment
 - **Dynamic Membership**: Managing cluster participation as clusters join, leave, or change status
 - **Application Distribution**: Distributing FL applications (ClientApp) to participating clusters
 
