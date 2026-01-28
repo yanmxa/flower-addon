@@ -25,6 +25,7 @@ Deploy the Flower addon to all clusters in the `global` cluster set.
 ```bash
 # Deploy auto-install configuration for all clusters
 make deploy-auto-all
+make update-superlink-address
 ```
 
 This applies:
@@ -46,6 +47,7 @@ Deploy the Flower addon only to clusters labeled with `gpu=true`.
 
 ```bash
 make deploy-auto-gpu
+make update-superlink-address
 ```
 
 ### Step 2: Label Target Clusters

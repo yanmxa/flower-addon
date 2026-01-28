@@ -181,7 +181,7 @@ setup-clusters: deploy-all ## Deploy hub and configure example clusters (cluster
 run-app: ## Run federated learning app on OCM federation
 	@HUB_IP=$$($(KUBECTL) get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}'); \
 	echo "Submitting FL app to SuperLink at $$HUB_IP:30093..."; \
-	flwr run . ocm-deployment --federation-config address="$$HUB_IP:30093" --stream
+	flwr run . ocm-deployment --federation-config 'address="'"$$HUB_IP"':30093"' --stream
 
 .PHONY: app-logs
 app-logs: ## Show FL infrastructure logs
