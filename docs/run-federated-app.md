@@ -16,19 +16,24 @@ Both use a single `flower-app` image containing your ML code and dependencies (P
 
 ```
 Hub Cluster                          Managed Clusters
-┌─────────────────────────┐          ┌─────────────────────────┐
-│  flower-system          │          │  flower-addon           │
-│  ├── SuperLink          │◄─────────│  ├── SuperNode          │
-│  │   (official image)   │          │  │   (official image)   │
-│  └── SuperExec-ServerApp│          │  └── SuperExec-ClientApp│
-│      (flower-app image) │          │      (flower-app image) │
-└─────────────────────────┘          └─────────────────────────┘
+┌─────────────────────────┐          ┌──────────────────────────────────────┐
+│  flower-system          │          │  open-cluster-management-agent-addon │
+│  ├── SuperLink          │◄─────────│  ├── SuperNode                       │
+│  │   (official image)   │          │  │   (official image)                │
+│  └── SuperExec-ServerApp│          │  └── SuperExec-ClientApp             │
+│      (flower-app image) │          │      (flower-app image)              │
+└─────────────────────────┘          └──────────────────────────────────────┘
 ```
 
 ## Prerequisites
 
 - Infrastructure deployed: Complete [Install Flower Addon](install-flower-addon.md) first
 - At least 2 SuperNodes connected
+- ManifestWorkReplicaSet feature enabled (for ClientApp distribution):
+  ```bash
+  kubectl patch clustermanager cluster-manager --type=merge \
+    -p '{"spec":{"workConfiguration":{"featureGates":[{"feature":"ManifestWorkReplicaSet","mode":"Enable"}]}}}'
+  ```
 
 ## Build and Deploy App
 
@@ -49,8 +54,8 @@ Verify:
 # ServerApp on hub
 kubectl get pods -n flower-system -l app.kubernetes.io/component=superexec-serverapp
 
-# ClientApp on managed clusters
-kubectl --context kind-cluster1 get pods -n flower-addon -l app.kubernetes.io/component=superexec-clientapp
+# ClientApp on managed clusters (deployed by ManifestWorkReplicaSet)
+kubectl --context kind-cluster1 get pods -n open-cluster-management-agent-addon -l app.kubernetes.io/component=superexec-clientapp
 ```
 
 ## Run FL Training
@@ -70,7 +75,7 @@ make run-app
 kubectl logs -n flower-system -l app.kubernetes.io/component=superexec-serverapp -f
 
 # ClientApp logs
-kubectl --context kind-cluster1 logs -n flower-addon -l app.kubernetes.io/component=superexec-clientapp -f
+kubectl --context kind-cluster1 logs -n open-cluster-management-agent-addon -l app.kubernetes.io/component=superexec-clientapp -f
 ```
 
 ## Custom Image

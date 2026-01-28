@@ -74,7 +74,7 @@ Verify:
 
 ```bash
 kubectl get managedclusteraddons -A
-kubectl --context kind-cluster1 get pods -n flower-addon
+kubectl --context kind-cluster1 get pods -n open-cluster-management-agent-addon -l app.kubernetes.io/component=supernode
 ```
 
 ## Cleanup
