@@ -20,8 +20,8 @@ Flower Addon leverages OCM's multi-cluster management to address these challenge
 |------------|-------------|
 | **Deployment** | Declarative SuperNode deployment across clusters via [OCM Addon](https://open-cluster-management.io/concepts/addon/) |
 | **Registration** | Automatic SuperNode registration with [SuperLink](https://flower.ai/docs/framework/ref-api/flwr.superlink.html) via secure connections |
-| **Scheduling** | Auto-select target clusters using [Placement](https://open-cluster-management.io/concepts/placement/) based on resources, labels, or custom strategies |
-| **Scaling** | Horizontal scaling of SuperNodes based on cluster status via Placement decisions |
+| **Scheduling** | Auto-select target clusters/devices using [Placement](https://open-cluster-management.io/concepts/placement/) based on resources(GPU, Datacenter, etc.), labels, or custom strategies |
+| **Scaling** | Horizontal scaling of SuperNodes based on cluster/device status via Placement |
 | **Application Distribution** | Distribute [ClientApp](https://flower.ai/docs/framework/docker/tutorial-quickstart-docker.html) containers via [ManifestWorkReplicaSet](https://open-cluster-management.io/docs/concepts/work-distribution/manifestworkreplicaset/) for process isolation mode |
 
 ## Architecture
