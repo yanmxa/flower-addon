@@ -10,7 +10,7 @@ Deploying federated learning at scale across multiple clusters and edge devices 
 - **Manual Registration**: SuperNodes need to be manually registered with the central SuperLink
 - **Collaborator Scheduling**: SuperNodes cannot automatically discover suitable clusters, requiring manual selection and deployment
 - **Dynamic Scaling**: No horizontal scaling for SuperNodes based on cluster status or workload demands
-- **Application Distribution**: ClientApp containers must be manually pinned to SuperNodes in process isolation mode (required for production)
+- **Application Distribution**: ClientApp containers must be manually pinned to SuperNodes in process isolation mode (recommended for production)
 
 Flower Addon leverages OCM's multi-cluster management to address these challenges:
 
