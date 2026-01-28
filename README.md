@@ -53,22 +53,14 @@ Flower Addon leverages OCM's multi-cluster management capabilities to automate t
 └─────────────────────────────┘ └─────────────────────────────┘
 ```
 
-## Documentation & Roadmap
+## Documentation
 
-### Guides
-
-- [Install Flower Addon Guide](docs/install-flower-addon.md) - Installation, configuration, and troubleshooting
-- [Auto-Install with Placement](docs/auto-install-by-placement.md) - Automatic deployment using OCM Placement
+- [Install Flower Addon](docs/install-flower-addon.md) - Deploy SuperLink and SuperNodes via OCM Addon
+- [Auto-Install with Placement](docs/auto-install-by-placement.md) - Schedule SuperNodes across clusters via OCM Placement
 - [Run Federated Learning Applications](docs/run-federated-app.md) - Submit and monitor FL jobs
 
-### Roadmap
+## Roadmap
 
-**Completed:**
-- [x] Flower deployment to managed clusters via OCM Addon
-- [x] Flower scheduling across clusters via OCM Placement
-- [x] Run federated learning applications in OCM environment
-
-**Planned:**
 - [ ] TLS-secured SuperNode-SuperLink connections via Addon auto-registration
 - [ ] Process isolation mode on OCM (ServerApp/ClientApp via Docker)
 - [ ] Automatic ClientApp distribution via ManifestWorkReplicaSet

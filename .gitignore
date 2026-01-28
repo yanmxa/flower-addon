@@ -54,3 +54,6 @@ state/
 # Binaries
 bin/
 CLAUDE.md
+
+# Proposals (local only)
+docs/proposal-flower-ocm-integration.md
