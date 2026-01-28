@@ -56,6 +56,30 @@ INFO :      [Fleet.PullMessages]
 5. ServerApp aggregates model updates using FedAvg strategy
 6. Process repeats for configured number of rounds
 
+## Important: Subprocess Mode Dependencies
+
+SuperLink and SuperNodes run in **subprocess isolation mode**. In this mode:
+
+- ServerApp/ClientApp code is executed as subprocess within the container
+- **Dependencies must be pre-installed in the container image** - Flower does not install dependencies at runtime
+- The official `flwr/superlink` and `flwr/supernode` images are minimal and may not include ML libraries
+
+### Building Custom Images with Dependencies
+
+For applications requiring additional dependencies (e.g., PyTorch, TensorFlow):
+
+```bash
+# Build custom images with ML dependencies
+SUPERLINK_IMAGE=quay.io/open-cluster-management/flower-superlink:1.25.0 \
+SUPERNODE_IMAGE=quay.io/open-cluster-management/flower-supernode:1.25.0 \
+make build-images
+
+# Load into Kind clusters (for local testing)
+make load-images-kind
+```
+
+The Dockerfiles in `deploy/superlink/` and `deploy/supernode/` can be customized to include your application's dependencies.
+
 ## Running the CIFAR-10 Example
 
 ### Step 1: Set Up Python Environment
@@ -126,16 +150,21 @@ kubectl --context kind-cluster2 logs -n open-cluster-management-agent-addon \
 ### ServerApp (SuperLink) Logs
 
 ```
-INFO :      Starting Flower ServerApp
-INFO :      Starting Flower simulation
+INFO :      Starting Flower ServerApp, config: num_rounds=3, no round_timeout
 INFO :      [ROUND 1]
-INFO :      configure_fit: strategy sampled 2 clients
-INFO :      aggregate_fit: received 2 results
-INFO :      fit progress: (1, 0.4523, {'accuracy': 0.3245})
+INFO :      configure_fit: strategy sampled 2 clients (out of 2)
+INFO :      aggregate_fit: received 2 results and 0 failures
+INFO :      aggregate_evaluate: received 2 results and 0 failures
 INFO :      [ROUND 2]
 ...
 INFO :      [ROUND 3]
-INFO :      fit progress: (3, 0.2134, {'accuracy': 0.5678})
+INFO :      aggregate_fit: received 2 results and 0 failures
+INFO :      aggregate_evaluate: received 2 results and 0 failures
+INFO :      Run finished 3 round(s)
+INFO :      History (loss, distributed):
+INFO :          round 1: 2.230
+INFO :          round 2: 2.364
+INFO :          round 3: 2.180
 ```
 
 ### ClientApp (SuperNode) Logs
@@ -147,27 +176,6 @@ INFO :      Loading CIFAR-10 data partition 0/2
 INFO :      Training model on partition 0 for 1 epoch(s)
 INFO :      Epoch 1: Loss=1.234, Accuracy=0.456
 ```
-
-## Configuration Options
-
-### Application Settings
-
-Configured in `pyproject.toml`:
-
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `num-server-rounds` | Number of federated learning rounds | `3` |
-| `fraction-evaluate` | Fraction of clients for evaluation | `0.5` |
-| `local-epochs` | Training epochs per round per client | `1` |
-| `learning-rate` | SGD learning rate | `0.1` |
-| `batch-size` | Training batch size | `32` |
-
-### Federation Settings
-
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `address` | SuperLink Exec API address | Auto-detected |
-| `insecure` | Disable TLS (development only) | `true` |
 
 ## Make Targets
 
