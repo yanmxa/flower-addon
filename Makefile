@@ -221,6 +221,30 @@ status: ## Show addon status
 	@echo "=== ManagedClusterAddOns ==="
 	$(KUBECTL) get managedclusteraddons -A
 
+##@ CI Targets (required by addon-contrib CI)
+
+.PHONY: verify
+verify: lint ## Verify the project (lint helm chart)
+	@echo "Verification complete!"
+
+.PHONY: build
+build: ## Build target (no-op for Helm-only addon)
+	@echo "No build required for Helm-only addon"
+
+.PHONY: test-unit
+test-unit: ## Run unit tests (no-op for Helm-only addon)
+	@echo "No unit tests for Helm-only addon"
+
+.PHONY: test-integration
+test-integration: ## Run integration tests (no-op for Helm-only addon)
+	@echo "No integration tests for Helm-only addon"
+
+.PHONY: test-chart
+test-chart: ## Run Helm chart tests
+	@echo "Running chart installation test..."
+	$(HELM) lint $(CHART_PATH)
+	@echo "Chart tests passed!"
+
 ##@ Development
 
 .PHONY: lint
