@@ -14,15 +14,6 @@ spec:
   manifestWorkTemplate:
     workload:
       manifests:
-        - apiVersion: v1
-          kind: ServiceAccount
-          metadata:
-            name: superexec-clientapp
-            namespace: open-cluster-management-agent-addon
-            labels:
-              app.kubernetes.io/name: flower-addon
-              app.kubernetes.io/component: superexec-clientapp
-
         - apiVersion: apps/v1
           kind: Deployment
           metadata:
@@ -43,7 +34,6 @@ spec:
                   app.kubernetes.io/name: flower-addon
                   app.kubernetes.io/component: superexec-clientapp
               spec:
-                serviceAccountName: superexec-clientapp
                 containers:
                   - name: superexec
                     image: flower-app:1.0.0

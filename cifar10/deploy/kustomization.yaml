@@ -40,10 +40,10 @@ patches:
       name: flower-superexec-clientapp
     patch: |-
       - op: replace
-        path: /spec/manifestWorkTemplate/workload/manifests/1/spec/template/spec/containers/0/image
+        path: /spec/manifestWorkTemplate/workload/manifests/0/spec/template/spec/containers/0/image
         value: flower-app:1.0.0
       - op: replace
-        path: /spec/manifestWorkTemplate/workload/manifests/1/spec/template/spec/containers/0/args
+        path: /spec/manifestWorkTemplate/workload/manifests/0/spec/template/spec/containers/0/args
         value:
           - "--insecure"
           - "--appio-api-address=flower-supernode:9094"
