@@ -60,7 +60,7 @@ spec:
                       - "--insecure"
                       - "--superlink={{`{{SUPERLINK_ADDRESS}}`}}:{{`{{SUPERLINK_PORT}}`}}"
                       - "--node-config"
-                      - "partition-id={{`{{PARTITION_ID}}`}} num-partitions={{`{{NUM_PARTITIONS}}`}}"
+                      - "cluster-name={{`{{CLUSTER_NAME}}`}} num-partitions={{`{{NUM_PARTITIONS}}`}}"
                       - "--isolation=process"
                       - "--clientappio-api-address=0.0.0.0:9094"
                     ports:

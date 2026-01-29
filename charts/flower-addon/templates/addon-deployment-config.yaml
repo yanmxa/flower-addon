@@ -14,8 +14,6 @@ spec:
       value: {{ .Values.deploymentConfig.superlinkPort | quote }}
     - name: IMAGE
       value: {{ include "flower-addon.supernodeImage" . | quote }}
-    - name: PARTITION_ID
-      value: {{ .Values.supernode.partitionId | quote }}
     - name: NUM_PARTITIONS
       value: {{ .Values.supernode.numPartitions | quote }}
 {{- end }}
@@ -35,8 +33,6 @@ spec:
       value: {{ .Values.deploymentConfig.superlinkPort | quote }}
     - name: IMAGE
       value: {{ include "flower-addon.supernodeImage" . | quote }}
-    - name: PARTITION_ID
-      value: {{ .Values.supernode.partitionId | quote }}
     - name: NUM_PARTITIONS
       value: {{ .Values.supernode.numPartitions | quote }}
     - name: NODE_TYPE
@@ -58,8 +54,6 @@ spec:
       value: {{ .Values.deploymentConfig.superlinkPort | quote }}
     - name: IMAGE
       value: {{ include "flower-addon.supernodeImage" . | quote }}
-    - name: PARTITION_ID
-      value: {{ .Values.supernode.partitionId | quote }}
     - name: NUM_PARTITIONS
       value: {{ .Values.supernode.numPartitions | quote }}
     - name: NODE_TYPE

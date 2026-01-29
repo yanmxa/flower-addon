@@ -12,6 +12,30 @@ from cifar10.task import train as train_fn
 app = ClientApp()
 
 
+def get_partition_id(context: Context) -> int:
+    """Get partition ID from node config.
+
+    Supports two modes:
+    1. Direct partition-id (for manual configuration)
+    2. Derived from cluster-name using hash (for OCM auto-install)
+    """
+    node_config = context.node_config
+    num_partitions = int(node_config["num-partitions"])
+
+    # Check if partition-id is directly specified
+    if "partition-id" in node_config:
+        return int(node_config["partition-id"])
+
+    # Derive partition-id from cluster-name
+    if "cluster-name" in node_config:
+        cluster_name = node_config["cluster-name"]
+        # Use hash to get consistent partition ID for each cluster
+        partition_id = hash(cluster_name) % num_partitions
+        return partition_id
+
+    raise ValueError("Either 'partition-id' or 'cluster-name' must be in node_config")
+
+
 @app.train()
 def train(msg: Message, context: Context):
     """Train the model on local data."""
@@ -23,8 +47,8 @@ def train(msg: Message, context: Context):
     model.to(device)
 
     # Load the data
-    partition_id = context.node_config["partition-id"]
-    num_partitions = context.node_config["num-partitions"]
+    partition_id = get_partition_id(context)
+    num_partitions = int(context.node_config["num-partitions"])
     batch_size = context.run_config["batch-size"]
     trainloader, _ = load_data(partition_id, num_partitions, batch_size)
 
@@ -59,8 +83,8 @@ def evaluate(msg: Message, context: Context):
     model.to(device)
 
     # Load the data
-    partition_id = context.node_config["partition-id"]
-    num_partitions = context.node_config["num-partitions"]
+    partition_id = get_partition_id(context)
+    num_partitions = int(context.node_config["num-partitions"])
     batch_size = context.run_config["batch-size"]
     _, valloader = load_data(partition_id, num_partitions, batch_size)
 

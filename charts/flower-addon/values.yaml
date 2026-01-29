@@ -36,8 +36,7 @@ supernode:
     limits:
       cpu: 1000m
       memory: 1Gi
-  # Default partition settings (can be overridden per-cluster)
-  partitionId: "0"
+  # Number of data partitions (partition-id is derived from cluster-name)
   numPartitions: "2"
 
 # OCM Addon configuration
