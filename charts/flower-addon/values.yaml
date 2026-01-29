@@ -59,15 +59,24 @@ deploymentConfig:
   superlinkAddress: "<HUB_NODE_IP>"
   superlinkPort: "30092"
 
-# Placement-based auto-install (optional)
+# Placement-based auto-install (optional, mutually exclusive)
+# Only one placement should be enabled at a time
 placement:
   # GPU clusters placement
   gpu:
     enabled: false
     name: flower-addon-gpu-placement
     clusterSet: default
+    # Config specific to GPU clusters
+    config:
+      name: flower-addon-gpu-config
+      nodeType: gpu
   # All clusters placement
   all:
     enabled: false
     name: flower-addon-all-placement
     clusterSet: global
+    # Config specific to all clusters
+    config:
+      name: flower-addon-all-config
+      nodeType: cpu
