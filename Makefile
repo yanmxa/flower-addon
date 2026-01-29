@@ -245,6 +245,10 @@ test-chart: ## Run Helm chart tests
 	$(HELM) lint $(CHART_PATH)
 	@echo "Chart tests passed!"
 
+.PHONY: test-e2e
+test-e2e: ## Run e2e tests (no-op for Helm-only addon)
+	@echo "No e2e tests for Helm-only addon"
+
 ##@ Development
 
 .PHONY: lint
