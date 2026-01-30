@@ -115,6 +115,8 @@ else
 	{ cat; echo "metadata:"; } | \
 	{ cat; echo "  name: flower-addon"; } | \
 	{ cat; echo "  namespace: $(CLUSTER)"; } | \
+	{ cat; echo "spec:"; } | \
+	{ cat; echo "  installNamespace: flower-addon"; } | \
 	$(KUBECTL) apply -f -
 endif
 
