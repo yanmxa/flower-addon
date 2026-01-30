@@ -55,3 +55,12 @@ spec:
         labelSelector:
           matchLabels:
             feature.open-cluster-management.io/addon-flower-addon: available
+---
+# ManagedClusterSetBinding to allow Placement to select clusters
+apiVersion: cluster.open-cluster-management.io/v1beta2
+kind: ManagedClusterSetBinding
+metadata:
+  name: global
+  namespace: flower-system
+spec:
+  clusterSet: global
