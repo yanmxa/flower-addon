@@ -15,7 +15,7 @@ images:
 # configMapGenerator:
 #   - name: flower-app-config
 #     literals:
-#       - EXECUTOR_API_ADDRESS=superlink-internal:9091
+#       - EXECUTOR_API_ADDRESS=superlink:9091
 #       - CLIENTAPPIO_API_ADDRESS=flower-supernode:9094
 
 patches:
@@ -31,7 +31,7 @@ patches:
         path: /spec/template/spec/containers/0/args
         value:
           - "--insecure"
-          - "--appio-api-address=superlink-internal:9091"
+          - "--appio-api-address=superlink:9091"
           - "--plugin-type=serverapp"
 
   # SuperExec-ClientApp configuration (inside ManifestWorkReplicaSet)

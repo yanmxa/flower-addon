@@ -16,16 +16,6 @@ spec:
               app.kubernetes.io/name: flower-addon
               app.kubernetes.io/managed-by: open-cluster-management
 
-        # ServiceAccount for SuperNode
-        - apiVersion: v1
-          kind: ServiceAccount
-          metadata:
-            name: flower-supernode
-            namespace: flower-addon
-            labels:
-              app.kubernetes.io/name: flower-addon
-              app.kubernetes.io/component: supernode
-
         # SuperNode Deployment
         - apiVersion: apps/v1
           kind: Deployment
@@ -51,7 +41,6 @@ spec:
                 annotations:
                   cluster-name: "{{`{{CLUSTER_NAME}}`}}"
               spec:
-                serviceAccountName: flower-supernode
                 containers:
                   - name: supernode
                     image: "{{`{{IMAGE}}`}}"
