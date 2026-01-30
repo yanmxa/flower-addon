@@ -47,23 +47,9 @@ Flower Addon leverages OCM's multi-cluster management to address these challenge
 
 ## Progress
 
-<details>
-<summary>[x] <a href="docs/install-flower-addon.md">Install Flower Addon</a> - Deploy SuperLink and SuperNodes via OCM Addon</summary>
-
-[![asciicast](https://asciinema.org/a/776744.svg)](https://asciinema.org/a/776744)
-</details>
-
-<details>
-<summary>[x] <a href="docs/auto-install-by-placement.md">Auto-Install with Placement</a> - Schedule SuperNodes across clusters via OCM Placement</summary>
-
-[![asciicast](https://asciinema.org/a/776746.svg)](https://asciinema.org/a/776746)
-</details>
-
-<details>
-<summary>[x] <a href="docs/run-federated-app.md">Run Federated Learning Applications</a> - Run federated learning applications on the Flower Addon environment</summary>
-
-[![asciicast](https://asciinema.org/a/776749.svg)](https://asciinema.org/a/776749)
-</details>
+- [x] [Install Flower Addon](docs/install-flower-addon.md) - Deploy SuperLink and SuperNodes via OCM Addon ([demo](https://asciinema.org/a/776744))
+- [x] [Auto-Install with Placement](docs/auto-install-by-placement.md) - Schedule SuperNodes across clusters via OCM Placement ([demo](https://asciinema.org/a/776746))
+- [x] [Run Federated Learning Applications](docs/run-federated-app.md) - Run federated learning applications on the Flower Addon environment ([demo](https://asciinema.org/a/776749))
 - [ ] Process isolation mode on OCM (ServerApp/ClientApp via Docker)
 - [ ] Automatic ClientApp distribution via ManifestWorkReplicaSet
 - [ ] TLS-secured SuperNode-SuperLink connections via Addon auto-registration
