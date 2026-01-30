@@ -27,6 +27,7 @@ metadata:
   name: {{ .Values.placement.gpu.config.name }}
   namespace: {{ .Values.addon.namespace }}
 spec:
+  agentInstallNamespace: flower-addon
   customizedVariables:
     - name: SUPERLINK_ADDRESS
       value: {{ .Values.deploymentConfig.superlinkAddress | quote }}
@@ -48,6 +49,7 @@ metadata:
   name: {{ .Values.placement.all.config.name }}
   namespace: {{ .Values.addon.namespace }}
 spec:
+  agentInstallNamespace: flower-addon
   customizedVariables:
     - name: SUPERLINK_ADDRESS
       value: {{ .Values.deploymentConfig.superlinkAddress | quote }}
