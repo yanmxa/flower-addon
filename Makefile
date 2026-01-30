@@ -90,24 +90,33 @@ deploy-auto-all: ## Deploy with auto-install for all clusters (global cluster se
 ##@ Manual Cluster Configuration
 
 .PHONY: enable-addon
-enable-addon: ## Enable addon on a cluster (usage: make enable-addon CLUSTER=cluster1)
+enable-addon: ## Enable addon on a cluster (usage: make enable-addon CLUSTER=cluster1 [CONFIG=flower-addon-config])
 ifndef CLUSTER
 	$(error CLUSTER is not set. Usage: make enable-addon CLUSTER=cluster1)
 endif
-	@echo "Creating ManagedClusterAddOn for $(CLUSTER)..."
+ifdef CONFIG
+	@echo "Creating ManagedClusterAddOn for $(CLUSTER) with config $(CONFIG)..."
 	@echo "apiVersion: addon.open-cluster-management.io/v1alpha1" | \
 	{ cat; echo "kind: ManagedClusterAddOn"; } | \
 	{ cat; echo "metadata:"; } | \
 	{ cat; echo "  name: flower-addon"; } | \
 	{ cat; echo "  namespace: $(CLUSTER)"; } | \
 	{ cat; echo "spec:"; } | \
-	{ cat; echo "  installNamespace: flower-addon"; } | \
 	{ cat; echo "  configs:"; } | \
 	{ cat; echo "    - group: addon.open-cluster-management.io"; } | \
 	{ cat; echo "      resource: addondeploymentconfigs"; } | \
-	{ cat; echo "      name: flower-addon-config"; } | \
+	{ cat; echo "      name: $(CONFIG)"; } | \
 	{ cat; echo "      namespace: $(NAMESPACE)"; } | \
 	$(KUBECTL) apply -f -
+else
+	@echo "Creating ManagedClusterAddOn for $(CLUSTER) (using defaultConfig from ClusterManagementAddOn)..."
+	@echo "apiVersion: addon.open-cluster-management.io/v1alpha1" | \
+	{ cat; echo "kind: ManagedClusterAddOn"; } | \
+	{ cat; echo "metadata:"; } | \
+	{ cat; echo "  name: flower-addon"; } | \
+	{ cat; echo "  namespace: $(CLUSTER)"; } | \
+	$(KUBECTL) apply -f -
+endif
 
 .PHONY: disable-addon
 disable-addon: ## Disable addon on a cluster (usage: make disable-addon CLUSTER=cluster1)

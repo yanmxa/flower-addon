@@ -54,14 +54,26 @@ kubectl get svc -n flower-system
 
 ## Enable Addon on Clusters
 
+Two options for enabling the addon:
+
+### Option 1: Use defaultConfig from ClusterManagementAddOn
+
 ```bash
-# Configure and enable on cluster1
-make deploy-cluster-config CLUSTER=cluster1 PARTITION_ID=0 NUM_PARTITIONS=2
+# Enable addon using the default config (simpler, recommended)
 make enable-addon CLUSTER=cluster1
+make enable-addon CLUSTER=cluster2
+```
+
+### Option 2: Use per-cluster config
+
+```bash
+# Configure and enable on cluster1 with specific partition config
+make deploy-cluster-config CLUSTER=cluster1 PARTITION_ID=0 NUM_PARTITIONS=2
+make enable-addon CLUSTER=cluster1 CONFIG=flower-addon-config
 
 # Configure and enable on cluster2
 make deploy-cluster-config CLUSTER=cluster2 PARTITION_ID=1 NUM_PARTITIONS=2
-make enable-addon CLUSTER=cluster2
+make enable-addon CLUSTER=cluster2 CONFIG=flower-addon-config
 ```
 
 Or use quick setup:
