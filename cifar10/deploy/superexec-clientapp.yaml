@@ -4,7 +4,7 @@ apiVersion: work.open-cluster-management.io/v1alpha1
 kind: ManifestWorkReplicaSet
 metadata:
   name: flower-superexec-clientapp
-  namespace: open-cluster-management
+  namespace: flower-system
   labels:
     app.kubernetes.io/name: flower-addon
     app.kubernetes.io/component: superexec-clientapp
@@ -18,7 +18,7 @@ spec:
           kind: Deployment
           metadata:
             name: superexec-clientapp
-            namespace: open-cluster-management-agent-addon
+            namespace: flower-addon
             labels:
               app.kubernetes.io/name: flower-addon
               app.kubernetes.io/component: superexec-clientapp
@@ -48,7 +48,7 @@ apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: Placement
 metadata:
   name: flower-clientapp-placement
-  namespace: open-cluster-management
+  namespace: flower-system
 spec:
   predicates:
     - requiredClusterSelector:
