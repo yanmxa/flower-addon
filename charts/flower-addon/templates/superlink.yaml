@@ -1,12 +1,4 @@
 {{- if .Values.superlink.enabled }}
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: superlink
-  namespace: {{ .Values.superlink.namespace }}
-  labels:
-    {{- include "flower-addon.superlinkLabels" . | nindent 4 }}
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -24,7 +16,6 @@ spec:
       labels:
         {{- include "flower-addon.superlinkSelectorLabels" . | nindent 8 }}
     spec:
-      serviceAccountName: superlink
       containers:
       - name: superlink
         image: {{ .Values.superlink.image.repository }}:{{ .Values.superlink.image.tag }}
