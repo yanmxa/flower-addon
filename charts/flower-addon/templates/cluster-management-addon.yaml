@@ -15,6 +15,11 @@ spec:
     # Reference to AddOnDeploymentConfig for custom variables
     - group: addon.open-cluster-management.io
       resource: addondeploymentconfigs
+      {{- if eq .Values.addon.installStrategy "Manual" }}
+      defaultConfig:
+        name: {{ .Values.deploymentConfig.name }}
+        namespace: {{ .Values.addon.namespace }}
+      {{- end }}
   installStrategy:
     type: {{ .Values.addon.installStrategy }}
     {{- if eq .Values.addon.installStrategy "Placements" }}
